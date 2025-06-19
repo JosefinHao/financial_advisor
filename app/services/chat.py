@@ -8,15 +8,17 @@ from app.models import SessionLocal, Conversation, Message
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def get_chat_response(user_message: str, conversation_id: int = None, tags: list = None):
+
+def get_chat_response(
+    user_message: str, conversation_id: int = None, tags: list = None
+):
     session = SessionLocal()
 
     try:
         # Create new conversation if not provided
         if not conversation_id:
             conversation = Conversation(
-                title=user_message[:50],
-                tags=tags or []  # Set tags if provided
+                title=user_message[:50], tags=tags or []  # Set tags if provided
             )
             session.add(conversation)
             session.commit()
@@ -27,9 +29,7 @@ def get_chat_response(user_message: str, conversation_id: int = None, tags: list
 
         # Store user message
         user_msg = Message(
-            conversation_id=conversation.id,
-            role="user",
-            content=user_message
+            conversation_id=conversation.id, role="user", content=user_message
         )
         session.add(user_msg)
 
@@ -40,7 +40,9 @@ def get_chat_response(user_message: str, conversation_id: int = None, tags: list
             .order_by(Message.timestamp)
             .all()
         )
-        message_payload = [{"role": msg.role, "content": msg.content} for msg in history]
+        message_payload = [
+            {"role": msg.role, "content": msg.content} for msg in history
+        ]
 
         # Get assistant response from OpenAI
         response = client.chat.completions.create(
@@ -52,9 +54,7 @@ def get_chat_response(user_message: str, conversation_id: int = None, tags: list
 
         # Store assistant response
         assistant = Message(
-            conversation_id=conversation.id,
-            role="assistant",
-            content=assistant_msg
+            conversation_id=conversation.id, role="assistant", content=assistant_msg
         )
         session.add(assistant)
         session.commit()

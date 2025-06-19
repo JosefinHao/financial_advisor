@@ -2,3 +2,5 @@ flask
 python-dotenv
 openai
 sqlalchemy
+flask_cors
+psycopg2
