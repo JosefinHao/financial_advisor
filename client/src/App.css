@@ -21,7 +21,7 @@
 }
 
 .sidebar h2 {
-  margin: 30px 0 10px 0;
+  margin: 0 0 10px 0;
 }
 
 .sidebar nav {
@@ -212,7 +212,7 @@
 }
 
 .chat-panel h1 {
-  margin: 30px 0 10px 0;
+  margin: 0 0 10px 0;
 }
 
 .chat-box {
@@ -227,7 +227,6 @@
 
 /* Chat Messages */
 .chat-message {
-  /* margin-bottom: 12px; */
   padding: 10px;
   border-radius: 8px;
   white-space: pre-wrap;
@@ -723,4 +722,15 @@ mark {
 
 .document-upload-container * {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* List styling for markdown-converted content */
+ul, ol {
+    margin: 0.5em 0 0 0; /* top margin only, no bottom margin */
+    padding-left: 1.5em; /* indent for bullets/numbers */
+}
+
+li {
+    margin: 0;
+    padding: 0;
 }
