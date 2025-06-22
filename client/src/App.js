@@ -42,28 +42,36 @@ function parseMarkdown(text) {
 
   // Unordered lists
   html = html.replace(/^[\s]*[-*+]\s+(.+)$/gm, '<TEMP_UL_ITEM>$1</TEMP_UL_ITEM>');
-  html = html.replace(/(<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>(\n<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>)*)/g, (match) => {
+  html = html.replace(/(<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>(\n<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>)*)/gs, (match) => {
     const items = match.replace(/<TEMP_UL_ITEM>/g, '<li>').replace(/<\/TEMP_UL_ITEM>/g, '</li>');
     return `<ul>${items}</ul>`;
   });
 
   // Ordered lists
   html = html.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<TEMP_OL_ITEM>$2</TEMP_OL_ITEM>');
-  html = html.replace(/(<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>(\n<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>)*)/g, (match) => {
+  html = html.replace(/(<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>(\n<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>)*)/gs, (match) => {
     const items = match.replace(/<TEMP_OL_ITEM>/g, '<li>').replace(/<\/TEMP_OL_ITEM>/g, '</li>');
     return `<ol>${items}</ol>`;
   });
 
-  // Line breaks outside lists
-  html = html.replace(/\n(?![^<]*<\/(?:li|ol|ul)>)(?!<(?:ul|ol|li))/g, '<br/>');
-
-  // Remove newlines between list items
+  // Clean up newlines within lists (remove all newlines inside list structures)
+  html = html.replace(/(<ul>)\n+/g, '$1');
+  html = html.replace(/\n+(<\/ul>)/g, '$1');
+  html = html.replace(/(<ol>)\n+/g, '$1');
+  html = html.replace(/\n+(<\/ol>)/g, '$1');
   html = html.replace(/(<\/li>)\n+(<li>)/g, '$1$2');
-  html = html.replace(/(<ul>)\n+(<li>)/g, '$1$2');
-  html = html.replace(/(<ol>)\n+(<li>)/g, '$1$2');
-  html = html.replace(/(<\/li>)\n+(<\/ul>)/g, '$1$2');
-  html = html.replace(/(<\/li>)\n+(<\/ol>)/g, '$1$2');
 
+  // Replace multiple consecutive newlines with double newlines (for paragraph separation)
+  html = html.replace(/\n{3,}/g, '\n\n');
+
+  // Convert remaining single newlines to <br/> tags, but preserve double newlines for paragraph breaks
+  html = html.replace(/\n\n/g, '<PARAGRAPH_BREAK>');
+  html = html.replace(/\n/g, '<br/>');
+  html = html.replace(/<PARAGRAPH_BREAK>/g, '<br/><br/>');
+
+  // Clean up any extra <br/> tags around lists
+  html = html.replace(/<br\/?>\s*(<[uo]l>)/g, '$1');
+  html = html.replace(/(<\/[uo]l>)\s*<br\/?>/g, '$1');
   // Multiple spaces
   html = html.replace(/ {2,}/g, (spaces) => '&nbsp;'.repeat(spaces.length));
 
@@ -398,7 +406,7 @@ function AppContent() {
   // Get filtered conversations based on search query
   const filteredConversations = filterConversations(conversations, searchQuery);
 
-  
+
 
   // Education Page Component
   function EducationPage() {
