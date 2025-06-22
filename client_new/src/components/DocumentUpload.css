@@ -1,0 +1,379 @@
+/* DocumentUpload.css */
+
+/* Container and Layout */
+.document-upload-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    background-color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header Styles */
+.header {
+    margin-bottom: 32px;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.subtitle {
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Section Styles */
+.upload-section,
+.history-section {
+    margin-bottom: 32px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 16px 0;
+}
+
+/* Drag and Drop Area */
+.drag-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background-color: #ffffff;
+}
+
+.drag-drop-area:hover {
+    background-color: #f9fafb;
+}
+
+.drag-drop-area.drag-over {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.drag-drop-area.file-selected {
+    border-color: #16a34a;
+    background-color: #f0fdf4;
+}
+
+.drag-drop-area.uploading {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.file-input-hidden {
+    display: none;
+}
+
+.drop-area-content {
+    padding: 32px;
+}
+
+.icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+/* Drag Over State */
+.drag-over-content {
+    color: #2563eb;
+}
+
+.drag-over-text {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* File Selected State */
+.file-selected-content {
+    color: #16a34a;
+}
+
+.file-selected-text {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 0 0 16px 0;
+}
+
+.file-info {
+    margin-top: 16px;
+    padding: 16px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+    max-width: 300px;
+    margin: 16px auto 0 auto;
+}
+
+.file-info p {
+    margin: 4px 0;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+/* Default State */
+.default-content {
+    color: #6b7280;
+}
+
+.main-text {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 0 0 8px 0;
+}
+
+.sub-text {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    margin: 0 0 16px 0;
+}
+
+.browse-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 16px;
+}
+
+.browse-button:hover {
+    background-color: #1d4ed8;
+}
+
+.supported-formats {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin: 16px 0 0 0;
+}
+
+/* Upload Button */
+.upload-button-container {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.upload-btn {
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    background-color: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-size: 1rem;
+}
+
+.upload-btn:hover:not(.disabled) {
+    background-color: #15803d;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.upload-btn.disabled {
+    background-color: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Messages */
+.error-message {
+    margin-top: 16px;
+    padding: 16px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    color: #b91c1c;
+}
+
+.analysis-result {
+    margin-top: 24px;
+    padding: 24px;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+}
+
+.analysis-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 0 0 12px 0;
+}
+
+.analysis-content {
+    color: #1e40af;
+}
+
+.analysis-content p {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+/* Document History */
+.empty-state {
+    text-align: center;
+    padding: 32px 0;
+    color: #6b7280;
+}
+
+.documents-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.document-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+}
+
+.document-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.document-title {
+    font-weight: 500;
+    color: #1f2937;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.delete-button {
+    background: none;
+    border: none;
+    font-size: 1.125rem;
+    cursor: pointer;
+    color: #ef4444;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.delete-button:hover {
+    color: #dc2626;
+}
+
+.document-meta {
+    margin-bottom: 12px;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.document-meta p {
+    margin: 4px 0;
+}
+
+.document-analysis {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 12px;
+}
+
+.analysis-summary-title {
+    font-weight: 500;
+    color: #374151;
+    margin: 0 0 4px 0;
+    font-size: 0.875rem;
+}
+
+.analysis-summary {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .document-upload-container {
+        padding: 16px;
+    }
+    
+    .documents-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .title {
+        font-size: 1.5rem;
+    }
+    
+    .drop-area-content {
+        padding: 24px 16px;
+    }
+    
+    .upload-section,
+    .history-section {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .file-info {
+        max-width: 100%;
+    }
+    
+    .document-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .document-title {
+        white-space: normal;
+        margin-right: 0;
+    }
+}

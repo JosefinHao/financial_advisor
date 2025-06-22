@@ -3,7 +3,6 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 import logging
 import os
-import openai
 import json
 import math
 from sqlalchemy.orm import selectinload
@@ -11,6 +10,14 @@ import PyPDF2
 from werkzeug.utils import secure_filename
 import io
 import base64
+from openai import OpenAI
+from openai._exceptions import OpenAIError
+import csv
+import pandas as pd
+from io import StringIO
+import docx
+from docx import Document
+import textract  # Alternative for complex document extraction
 
 # Import your models and services
 try:
@@ -31,9 +38,10 @@ logging.basicConfig(level=logging.INFO)
 
 # Set OpenAI API key from environment variable
 try:
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    if not openai.api_key:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
         logging.warning("OPENAI_API_KEY environment variable not set")
+    client = OpenAI(api_key=api_key)
 except Exception as e:
     logging.error(f"Error setting OpenAI API key: {e}")
 
@@ -89,7 +97,7 @@ def check_dependencies():
         missing_deps.append("Conversation model")
     if not Message:
         missing_deps.append("Message model")
-    if not openai.api_key:
+    if not api_key:
         missing_deps.append("OpenAI API key")
 
     return missing_deps
@@ -136,7 +144,7 @@ def health():
         health_status["issues"].append("Database models not imported")
 
     # Check OpenAI
-    if openai.api_key:
+    if api_key:
         health_status["openai"] = "configured"
     else:
         health_status["openai"] = "not_configured"
@@ -202,7 +210,7 @@ def get_financial_advisor_response(user_message, conversation_id=None, tags=None
     if not SessionLocal or not Conversation or not Message:
         raise Exception("Database models not available")
 
-    if not openai.api_key:
+    if not api_key:
         raise Exception("OpenAI API key not configured")
 
     session = SessionLocal()
@@ -233,7 +241,7 @@ def get_financial_advisor_response(user_message, conversation_id=None, tags=None
 
         # Get response from OpenAI with financial advisor context
         try:
-            response = openai.chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 temperature=0.7,
@@ -325,7 +333,7 @@ def create_financial_profile():
 def get_market_update():
     """Get current market insights and how they might affect financial planning"""
     try:
-        if not openai.api_key:
+        if not api_key:
             return jsonify({"error": "Market update service unavailable"}), 503
 
         market_prompt = """Provide a brief market update focusing on:
@@ -334,7 +342,7 @@ def get_market_update():
         3. Any actionable advice for retail investors
         Keep it concise and practical for someone managing their personal finances."""
 
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": FINANCIAL_ADVISOR_PROMPT},
@@ -972,7 +980,7 @@ def auto_rename_conversation(conversation_id):
         if not SessionLocal or not Conversation or not Message:
             return jsonify({"error": "Database service unavailable"}), 503
             
-        if not openai.api_key:
+        if not api_key:
             return jsonify({"error": "OpenAI service unavailable"}), 503
 
         # Get the conversation
@@ -1007,7 +1015,7 @@ def auto_rename_conversation(conversation_id):
 
         # Generate title using OpenAI
         try:
-            response = openai.chat.completions.create(
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {
@@ -1032,7 +1040,7 @@ def auto_rename_conversation(conversation_id):
             if len(title) > 100:
                 title = title[:97] + "..."
                 
-        except openai.OpenAIError as e:
+        except OpenAIError as e:
             app.logger.error(f"OpenAI API error: {e}")
             return jsonify({"error": "Failed to generate title", "details": str(e)}), 500
         except Exception as e:
@@ -1060,6 +1068,325 @@ def auto_rename_conversation(conversation_id):
     finally:
         session.close()
 
+def extract_text_from_pdf(file_path):
+    """Extract text from PDF file"""
+    try:
+        with open(file_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            return text
+    except Exception as e:
+        app.logger.error(f"Error extracting PDF text: {e}")
+        raise Exception(f"Failed to extract text from PDF: {str(e)}")
+
+def extract_text_from_txt(file_path):
+    """Extract text from TXT file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except UnicodeDecodeError:
+        # Try with different encoding
+        try:
+            with open(file_path, 'r', encoding='latin-1') as file:
+                return file.read()
+        except Exception as e:
+            app.logger.error(f"Error reading TXT file: {e}")
+            raise Exception(f"Failed to read text file: {str(e)}")
+    except Exception as e:
+        app.logger.error(f"Error extracting TXT text: {e}")
+        raise Exception(f"Failed to extract text from TXT: {str(e)}")
+
+def extract_data_from_csv(file_path):
+    """Extract and analyze data from CSV file"""
+    try:
+        # Try to read with pandas for better error handling
+        df = pd.read_csv(file_path)
+        
+        # Basic analysis
+        analysis = {
+            "rows": len(df),
+            "columns": len(df.columns),
+            "column_names": df.columns.tolist(),
+            "data_types": df.dtypes.to_dict(),
+            "summary_stats": {},
+            "sample_data": df.head(5).to_dict('records') if len(df) > 0 else []
+        }
+        
+        # Get summary statistics for numeric columns
+        numeric_columns = df.select_dtypes(include=['number']).columns
+        if len(numeric_columns) > 0:
+            analysis["summary_stats"] = df[numeric_columns].describe().to_dict()
+        
+        # Convert text content for AI analysis
+        text_content = f"CSV File Analysis:\n"
+        text_content += f"Rows: {len(df)}, Columns: {len(df.columns)}\n"
+        text_content += f"Column Names: {', '.join(df.columns.tolist())}\n\n"
+        
+        # Add sample rows as text
+        if len(df) > 0:
+            text_content += "Sample Data:\n"
+            for i, row in df.head(10).iterrows():
+                text_content += f"Row {i+1}: {dict(row)}\n"
+        
+        return text_content, analysis
+        
+    except Exception as e:
+        app.logger.error(f"Error extracting CSV data: {e}")
+        raise Exception(f"Failed to extract data from CSV: {str(e)}")
+
+def analyze_document_with_ai(text_content, file_type, filename):
+    """Analyze document content using OpenAI"""
+    # print('Analyze document content using OpenAI...')
+    try:
+        if not api_key:
+            raise Exception("OpenAI API key not configured")
+        
+        # Create analysis prompt based on file type
+        if file_type == 'csv':
+            analysis_prompt = f"""Analyze this financial CSV data and provide:
+1. A clear summary of what this data represents
+2. Key insights about the financial information
+3. Specific recommendations based on the data patterns
+4. Any concerning trends or opportunities
+
+Document: {filename}
+Data: {text_content[:3000]}"""  # Limit content to avoid token limits
+        else:
+            analysis_prompt = f"""Analyze this financial document and provide:
+1. A comprehensive summary of the document's contents
+2. Key financial insights and important numbers/data points
+3. Actionable recommendations based on the information
+4. Any red flags or opportunities mentioned
+
+Document: {filename}
+Content: {text_content[:3000]}"""  # Limit content to avoid token limits
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": FINANCIAL_ADVISOR_PROMPT + "\n\nYou are analyzing a uploaded financial document. Provide detailed, actionable insights."
+                },
+                {"role": "user", "content": analysis_prompt}
+            ],
+            temperature=0.3,  # Lower temperature for more consistent analysis
+            max_tokens=1000,
+        )
+        print(f'GPT response: {response}')
+        ai_analysis = response.choices[0].message.content
+
+        # Parse the AI response into structured format
+        lines = ai_analysis.split('\n')
+        
+        summary = ""
+        insights = []
+        recommendations = []
+        
+        current_section = "summary"
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Detect section headers
+            if any(keyword in line.lower() for keyword in ['summary', 'overview']):
+                current_section = "summary"
+                continue
+            elif any(keyword in line.lower() for keyword in ['insight', 'key', 'important']):
+                current_section = "insights"
+                continue
+            elif any(keyword in line.lower() for keyword in ['recommend', 'suggest', 'advice']):
+                current_section = "recommendations"
+                continue
+            
+            # Add content to appropriate section
+            if current_section == "summary":
+                summary += line + " "
+            elif current_section == "insights" and line.startswith(('•', '-', '*', '1.', '2.', '3.')):
+                insights.append(line.lstrip('•-*123456789. '))
+            elif current_section == "recommendations" and line.startswith(('•', '-', '*', '1.', '2.', '3.')):
+                recommendations.append(line.lstrip('•-*123456789. '))
+        
+        # If parsing didn't work well, fall back to simple approach
+        if not summary and not insights and not recommendations:
+            parts = ai_analysis.split('\n\n')
+            summary = parts[0] if parts else ai_analysis[:200]
+            if len(parts) > 1:
+                insights = [parts[1]] if len(parts) > 1 else []
+                recommendations = [parts[2]] if len(parts) > 2 else []
+        
+        # Format the response for frontend display
+        formatted_analysis = f"""📊 ANALYSIS SUMMARY:
+{summary.strip() or 'Analysis completed successfully.'}
+
+🔍 KEY INSIGHTS:
+"""
+        for insight in (insights if insights else ["Document processed and analyzed."]):
+            formatted_analysis += f"• {insight}\n"
+        
+        formatted_analysis += "\n💡 RECOMMENDATIONS:\n"
+        for rec in (recommendations if recommendations else ["Consult with a financial advisor for personalized advice."]):
+            formatted_analysis += f"• {rec}\n"
+        
+        return formatted_analysis
+        
+    except Exception as e:
+        app.logger.error(f"Error in AI analysis: {e}")
+        # Return fallback analysis
+        return f"""📊 ANALYSIS SUMMARY:
+Document '{filename}' has been processed successfully. The file contains {file_type.upper()} data that can be used for financial analysis.
+
+🔍 KEY INSIGHTS:
+• Successfully extracted content from {filename}
+• File type: {file_type.upper()}
+• Content is ready for detailed financial review
+
+💡 RECOMMENDATIONS:
+• Review the extracted data for accuracy
+• Consider consulting with a financial advisor for detailed analysis
+• Use this data to track your financial progress"""
+
+
+@app.route('/documents/upload', methods=['POST'])
+def upload_document():
+    """Upload and analyze financial documents"""
+    try:
+        # Check if file was uploaded
+        if 'document' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+        
+        file = request.files['document']
+        
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({"error": "File type not allowed. Please upload PDF, TXT, or CSV files."}), 400
+        
+        # Secure the filename
+        filename = secure_filename(file.filename)
+        
+        # Check file size (already handled by Flask config, but double-check)
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)     # Reset to beginning
+        
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return jsonify({"error": "File size too large. Maximum size is 10MB."}), 400
+        
+        # Save file temporarily
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        try:
+            # Extract content based on file type
+            file_extension = filename.rsplit('.', 1)[1].lower()
+            extracted_data = None
+            
+            if file_extension == 'pdf':
+                text_content = extract_text_from_pdf(file_path)
+                file_type = 'pdf'
+            elif file_extension == 'txt':
+                text_content = extract_text_from_txt(file_path)
+                file_type = 'txt'
+            elif file_extension == 'csv':
+                text_content, extracted_data = extract_data_from_csv(file_path)
+                file_type = 'csv'
+            else:
+                return jsonify({"error": "Unsupported file type"}), 400
+            
+            # Validate that we extracted some content
+            if not text_content or len(text_content.strip()) == 0:
+                return jsonify({"error": "No readable content found in the file"}), 400
+            
+            app.logger.info(f"Successfully extracted {len(text_content)} characters from {filename}")
+            
+            # Analyze with AI
+            ai_analysis = analyze_document_with_ai(text_content, file_type, filename)
+            
+            # Prepare response
+            response_data = {
+                "filename": filename,
+                "file_type": file_type,
+                "file_size": file_size,
+                "processing_timestamp": datetime.now().isoformat(),
+                **ai_analysis
+            }
+            
+            # Add extracted data for CSV files
+            if extracted_data:
+                response_data["extracted_data"] = extracted_data
+            
+            # Log successful processing
+            app.logger.info(f"Successfully processed document: {filename} ({file_type})")
+            
+            return jsonify(response_data), 200
+            
+        except Exception as processing_error:
+            app.logger.error(f"Error processing file {filename}: {processing_error}")
+            return jsonify({
+                "error": "Failed to process document", 
+                "details": str(processing_error)
+            }), 500
+        
+        finally:
+            # Clean up - remove temporary file
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    app.logger.info(f"Cleaned up temporary file: {filename}")
+            except Exception as cleanup_error:
+                app.logger.warning(f"Failed to clean up temporary file {filename}: {cleanup_error}")
+    
+    except Exception as e:
+        app.logger.error(f"Unexpected error in document upload: {e}")
+        return jsonify({
+            "error": "Upload failed", 
+            "details": str(e)
+        }), 500
+
+# Additional route for document history (optional)
+@app.route('/documents/history', methods=['GET'])
+def get_document_history():
+    """Get history of processed documents"""
+    try:
+        if not SessionLocal or not Conversation:
+            return jsonify({"error": "Database service unavailable"}), 503
+        
+        session = SessionLocal()
+        try:
+            # Get conversations tagged with document uploads
+            document_conversations = session.query(Conversation).filter(
+                Conversation.tags.ilike('%document-upload%')
+            ).order_by(Conversation.created_at.desc()).limit(50).all()
+            
+            documents = []
+            for conv in document_conversations:
+                if conv.metadata:
+                    try:
+                        doc_data = json.loads(conv.metadata)
+                        documents.append({
+                            "id": conv.id,
+                            "filename": doc_data.get("filename", "Unknown"),
+                            "file_type": doc_data.get("file_type", "Unknown"),
+                            "processed_at": conv.created_at.isoformat(),
+                            "summary": doc_data.get("summary", "")[:200] + "..." if len(doc_data.get("summary", "")) > 200 else doc_data.get("summary", "")
+                        })
+                    except json.JSONDecodeError:
+                        continue
+            
+            return jsonify(documents)
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        app.logger.error(f"Error getting document history: {e}")
+        return jsonify({"error": "Failed to retrieve document history"}), 500
 
 @app.errorhandler(404)
 def not_found(error):
