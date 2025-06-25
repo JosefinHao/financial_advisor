@@ -251,12 +251,6 @@ function AppContent() {
     }
   }, [selectedConversationId]);
 
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [chatHistory]);
-
   // Enhanced sidebar resizing functionality
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -1129,9 +1123,38 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <BackToTopButton />
       </div>
     </div>
   );
+}
+
+function BackToTopButton() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShow(window.scrollY > 120);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
+  const handleClick = () => {
+    if (location.pathname !== '/') {
+      navigate('/');
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  return show ? (
+    <button className="back-to-top-btn" onClick={handleClick} title="Back to top or main page">
+      ⬆ Back to Top
+    </button>
+  ) : null;
 }
 
 function App() {
