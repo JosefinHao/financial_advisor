@@ -1,9 +1,154 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import DocumentUpload from './components/DocumentUpload';
 import RemindersPage from './components/RemindersPage';
 import DashboardPage from './components/DashboardPage';
+import RetirementCalculator from './components/RetirementCalculator';
+import MortgageCalculator from './components/MortgageCalculator';
+import CompoundInterestCalculator from './components/CompoundInterestCalculator';
+
+// Calculator State Context
+const CalculatorStateContext = createContext();
+
+function CalculatorStateProvider({ children }) {
+  const [calculatorStates, setCalculatorStates] = useState({
+    retirement: {
+      formData: {
+        current_age: 30,
+        retirement_age: 65,
+        current_savings: 50000,
+        monthly_contribution: 1000,
+        expected_return: 7,
+        life_expectancy: 85,
+        inflation_rate: 2.5,
+        social_security_income: 2000,
+        pension_income: 0,
+        desired_retirement_income: 80000
+      },
+      results: null,
+      loading: false,
+      error: ''
+    },
+    mortgage: {
+      formData: {
+        loan_amount: 300000,
+        interest_rate: 4.5,
+        loan_term_years: 30,
+        down_payment: 60000,
+        property_tax: 3600,
+        insurance: 1200,
+        pmi_rate: 0.5,
+        annual_income: 80000
+      },
+      results: null,
+      loading: false,
+      error: ''
+    },
+    compoundInterest: {
+      formData: {
+        initial_investment: 10000,
+        monthly_contribution: 500,
+        annual_interest_rate: 7,
+        compounding_frequency: 'monthly',
+        investment_period_years: 20,
+        tax_rate: 15,
+        inflation_rate: 2.5,
+        contribution_increase_rate: 3
+      },
+      results: null,
+      loading: false,
+      error: ''
+    }
+  });
+
+  // Load states from localStorage on mount
+  useEffect(() => {
+    const savedStates = localStorage.getItem('calculatorStates');
+    if (savedStates) {
+      try {
+        const parsedStates = JSON.parse(savedStates);
+        setCalculatorStates(prev => ({ ...prev, ...parsedStates }));
+      } catch (error) {
+        console.error('Error loading calculator states:', error);
+      }
+    }
+  }, []);
+
+  // Save states to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('calculatorStates', JSON.stringify(calculatorStates));
+  }, [calculatorStates]);
+
+  const updateCalculatorState = (calculatorType, updates) => {
+    setCalculatorStates(prev => ({
+      ...prev,
+      [calculatorType]: {
+        ...prev[calculatorType],
+        ...updates
+      }
+    }));
+  };
+
+  const value = {
+    calculatorStates,
+    updateCalculatorState
+  };
+
+  return (
+    <CalculatorStateContext.Provider value={value}>
+      {children}
+    </CalculatorStateContext.Provider>
+  );
+}
+
+function useCalculatorState() {
+  const context = useContext(CalculatorStateContext);
+  if (!context) {
+    throw new Error('useCalculatorState must be used within a CalculatorStateProvider');
+  }
+  return context;
+}
+
+// Wrapper components for calculators with persistent state
+function RetirementCalculatorWrapper() {
+  const { calculatorStates, updateCalculatorState } = useCalculatorState();
+  return (
+    <RetirementCalculator 
+      formData={calculatorStates.retirement.formData}
+      results={calculatorStates.retirement.results}
+      loading={calculatorStates.retirement.loading}
+      error={calculatorStates.retirement.error}
+      updateState={(updates) => updateCalculatorState('retirement', updates)}
+    />
+  );
+}
+
+function MortgageCalculatorWrapper() {
+  const { calculatorStates, updateCalculatorState } = useCalculatorState();
+  return (
+    <MortgageCalculator 
+      formData={calculatorStates.mortgage.formData}
+      results={calculatorStates.mortgage.results}
+      loading={calculatorStates.mortgage.loading}
+      error={calculatorStates.mortgage.error}
+      updateState={(updates) => updateCalculatorState('mortgage', updates)}
+    />
+  );
+}
+
+function CompoundInterestCalculatorWrapper() {
+  const { calculatorStates, updateCalculatorState } = useCalculatorState();
+  return (
+    <CompoundInterestCalculator 
+      formData={calculatorStates.compoundInterest.formData}
+      results={calculatorStates.compoundInterest.results}
+      loading={calculatorStates.compoundInterest.loading}
+      error={calculatorStates.compoundInterest.error}
+      updateState={(updates) => updateCalculatorState('compoundInterest', updates)}
+    />
+  );
+}
 
 function parseMarkdown(text) {
   // Escape HTML first
@@ -165,7 +310,7 @@ function AppContent() {
 
   const refreshConversations = async (preserveSelection = false) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/conversations');
+      const res = await fetch('http://127.0.0.1:5000/api/v1/conversations');
       const data = await res.json();
       setConversations(data);
 
@@ -180,7 +325,7 @@ function AppContent() {
 
   const loadConversation = async (id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:5000/conversations/${id}`);
+      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}`);
       const data = await res.json();
       setChatHistory(data.messages || []);
       setTagsArray(data.tags || []);
@@ -199,7 +344,7 @@ function AppContent() {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/conversations/${selectedConversationId}`, {
+      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage.trim() }),
@@ -216,7 +361,7 @@ function AppContent() {
 
   const startNewChat = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/conversations', {
+      const res = await fetch('http://127.0.0.1:5000/api/v1/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'New Chat' }),
@@ -275,7 +420,7 @@ function AppContent() {
     const newTitle = prompt('Enter new title for the conversation:');
     if (!newTitle) return;
     try {
-      await fetch(`http://127.0.0.1:5000/conversations/${id}/rename`, {
+      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}/rename`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle }),
@@ -288,7 +433,7 @@ function AppContent() {
 
   const handleAutoRename = async (id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:5000/conversations/${id}/auto_rename`, {
+      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}/auto_rename`, {
         method: 'POST',
       });
       const data = await res.json();
@@ -301,7 +446,7 @@ function AppContent() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this conversation?')) return;
     try {
-      await fetch(`http://127.0.0.1:5000/conversations/${id}`, {
+      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}`, {
         method: 'DELETE',
       });
       await refreshConversations();
@@ -318,7 +463,7 @@ function AppContent() {
     if (!newTag.trim() || !selectedConversationId) return;
     const updatedTags = [...tagsArray, newTag.trim()];
     try {
-      await fetch(`http://127.0.0.1:5000/conversations/${selectedConversationId}/tags`, {
+      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}/tags`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: updatedTags }),
@@ -350,7 +495,7 @@ function AppContent() {
     const updatedTags = conversation.tags.filter(t => t !== tagToRemove);
 
     try {
-      await fetch(`http://127.0.0.1:5000/conversations/${conversationId}/tags`, {
+      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${conversationId}/tags`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: updatedTags }),
@@ -477,7 +622,7 @@ function AppContent() {
       setSelectedTopic(topicId);
 
       try {
-        const response = await fetch(`http://127.0.0.1:5000/education/topics/${topicId}`);
+        const response = await fetch(`http://127.0.0.1:5000/api/v1/education/topics/${topicId}`);
         if (response.ok) {
           const data = await response.json();
           setContent(data.content);
@@ -676,33 +821,6 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
 
 
   // Placeholder Components
-  function RetirementCalculator() {
-    return (
-      <div>
-        <h2>Retirement Calculator</h2>
-        <p>Projection of retirement savings & income will be implemented here.</p>
-      </div>
-    );
-  }
-
-  function MortgageCalculator() {
-    return (
-      <div>
-        <h2>Mortgage Calculator</h2>
-        <p>Monthly payments & total interest calculations here.</p>
-      </div>
-    );
-  }
-
-  function CompoundInterestCalculator() {
-    return (
-      <div>
-        <h2>Compound Interest Calculator</h2>
-        <p>Growth projections based on compound interest here.</p>
-      </div>
-    );
-  }
-
   function GoalsPage() {
     return (
       <div>
@@ -999,9 +1117,9 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           } />
 
           {/* Other Routes */}
-          <Route path="/calculators/retirement" element={<RetirementCalculator />} />
-          <Route path="/calculators/mortgage" element={<MortgageCalculator />} />
-          <Route path="/calculators/compound-interest" element={<CompoundInterestCalculator />} />
+          <Route path="/calculators/retirement" element={<RetirementCalculatorWrapper />} />
+          <Route path="/calculators/mortgage" element={<MortgageCalculatorWrapper />} />
+          <Route path="/calculators/compound-interest" element={<CompoundInterestCalculatorWrapper />} />
           <Route path="/goals" element={<GoalsPage />} />
           <Route path="/upload-document" element={<DocumentUpload />} />
           <Route path="/reminders" element={<RemindersPage />} />
@@ -1019,7 +1137,9 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
 function App() {
   return (
     <Router>
-      <AppContent />
+      <CalculatorStateProvider>
+        <AppContent />
+      </CalculatorStateProvider>
     </Router>
   );
 }

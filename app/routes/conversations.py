@@ -112,27 +112,9 @@ def send_message(conversation_id):
             if not conversation:
                 return jsonify({"error": "Conversation not found"}), 404
             
-            # Store user message
-            user_message = Message(
-                conversation_id=conversation_id,
-                role="user",
-                content=message_content
-            )
-            session.add(user_message)
-            session.commit()
-            
-            # Get AI response
+            # Get AI response using the service
             try:
                 ai_response, _ = get_chat_response(message_content, conversation_id)
-                
-                # Store AI response
-                assistant_message = Message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=ai_response
-                )
-                session.add(assistant_message)
-                session.commit()
                 
                 return jsonify({
                     "reply": ai_response,
