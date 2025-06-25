@@ -6,7 +6,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # Import blueprints
-from app.routes import conversations_bp, calculators_bp, documents_bp
+from app.routes import conversations_bp, calculators_bp, documents_bp, education_bp
 
 # Import utilities
 from app.utils import handle_api_error
@@ -31,6 +31,7 @@ def create_app():
     app.register_blueprint(conversations_bp, url_prefix='/api/v1')
     app.register_blueprint(calculators_bp, url_prefix='/api/v1')
     app.register_blueprint(documents_bp, url_prefix='/api/v1')
+    app.register_blueprint(education_bp, url_prefix='/api/v1')
     
     # Health check endpoint
     @app.route("/health", methods=["GET"])
