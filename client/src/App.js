@@ -7,6 +7,7 @@ import DashboardPage from './components/DashboardPage';
 import RetirementCalculator from './components/RetirementCalculator';
 import MortgageCalculator from './components/MortgageCalculator';
 import CompoundInterestCalculator from './components/CompoundInterestCalculator';
+import GoalsPage from './components/GoalsPage';
 
 // Calculator State Context
 const CalculatorStateContext = createContext();
@@ -570,8 +571,6 @@ function AppContent() {
   // Get filtered conversations based on search query
   const filteredConversations = filterConversations(conversations, searchQuery);
 
-
-
   // Education Page Component
   function EducationPage() {
     const [topics, setTopics] = useState([]);
@@ -838,47 +837,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
     );
   }
 
-
-  // Placeholder Components
-  function GoalsPage() {
-    return (
-      <div>
-        <h2>Goal Tracking System</h2>
-        <p>Create financial targets, track progress, and get insights here.</p>
-      </div>
-    );
-  }
-
-
-  // function RemindersPage() {
-  //   return (
-  //     <div>
-  //       <h2>Scheduled Reminders</h2>
-  //       <p>Set, view, and manage financial reminders here.</p>
-  //     </div>
-  //   );
-  // }
-
-  // function DashboardPage() {
-  //   return (
-  //     <div>
-  //       <h2>Dashboard & Analytics</h2>
-  //       <p>Overview of your goals, reminders, spending analysis, and more.</p>
-  //     </div>
-  //   );
-  // }
-
-  // function EducationPage() {
-  //   return (
-  //     <div>
-  //       <h2>Financial Education</h2>
-  //       <p>Access learning modules and AI-generated financial education content.</p>
-  //     </div>
-  //   );
-  // }
-
-
-
+  // Goal Tracking Component - Now imported from separate file
 
   return (
     <div className="app-container">
@@ -931,9 +890,8 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
             <li>
               <Link to="/goals">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <circle cx="12" cy="12" r="6"/>
-                  <circle cx="12" cy="12" r="2"/>
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                  <line x1="4" y1="22" x2="4" y2="15"/>
                 </svg>
                 <span>Goal Tracking</span>
               </Link>
@@ -1192,11 +1150,9 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                     Add Tag
                   </button>
                   {tagSaved && <span className="tag-saved-message">Saved!</span>}
-                </div>
-                
-                {/* Current Tags Display */}
-                {tagsArray && tagsArray.length > 0 && (
-                  <div className="current-tags-display">
+
+                  {/* Current Tags Display (inline) */}
+                  {tagsArray && tagsArray.length > 0 && (
                     <div className="current-tags-row">
                       <span className="current-tags-label">Current tags:</span>
                       <div className="current-tags-list">
@@ -1215,8 +1171,8 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Message Input Area */}
