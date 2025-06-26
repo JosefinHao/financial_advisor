@@ -312,14 +312,29 @@ function AppContent() {
       if (!selectedConversationId && !preserveSelection && data.length > 0) {
         setSelectedConversationId(data[0].id);
       }
+      
+      // If we're preserving selection, make sure the selected conversation still exists
+      if (preserveSelection && selectedConversationId) {
+        const conversationExists = data.some(conv => conv.id === selectedConversationId);
+        if (!conversationExists) {
+          setSelectedConversationId(null);
+          setChatHistory([]);
+          setTagsArray([]);
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
     }
   };
 
   const loadConversation = async (id) => {
+    if (!id) return;
+    
     try {
       const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}`);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       const data = await res.json();
       setChatHistory(data.messages || []);
       setTagsArray(data.tags || []);
@@ -327,6 +342,9 @@ function AppContent() {
       setTagSaved(false);
     } catch (err) {
       console.error("Failed to load conversation:", err);
+      // Clear the chat history on error
+      setChatHistory([]);
+      setTagsArray([]);
     }
   };
 
@@ -516,7 +534,14 @@ function AppContent() {
 
   // Fixed function to handle conversation selection
   const handleConversationClick = (conversationId) => {
+    // Prevent unnecessary state updates if already selected
+    if (selectedConversationId === conversationId) {
+      return;
+    }
+    
+    // Set the selected conversation immediately
     setSelectedConversationId(conversationId);
+    
     // Only navigate if we're not already on the chat page
     if (location.pathname !== '/') {
       navigate('/');
@@ -868,15 +893,92 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
         {/* Navigation Menu */}
         <nav>
           <ul>
-            <li><Link to="/">💬 Chat</Link></li>
-            <li><Link to="/calculators/retirement">🧮 Retirement Calculator</Link></li>
-            <li><Link to="/calculators/mortgage">🧮 Mortgage Calculator</Link></li>
-            <li><Link to="/calculators/compound-interest">🧮 Compound Interest Calculator</Link></li>
-            <li><Link to="/goals">🎯 Goal Tracking</Link></li>
-            <li><Link to="/upload-document">📄 Document Upload</Link></li>
-            <li><Link to="/reminders">⏰ Reminders</Link></li>
-            <li><Link to="/dashboard">📊 Dashboard</Link></li>
-            <li><Link to="/education/topics">📚 Education</Link></li>
+            <li>
+              <Link to="/">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <span>Chat</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/calculators/retirement">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <span>Retirement Calculator</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/calculators/mortgage">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+                <span>Mortgage Calculator</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/calculators/compound-interest">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 21V3"/>
+                  <path d="M3 21h18"/>
+                  <path d="M3 20l2-1 2-1 2-1 2-2 2-2 2-2 2-3 2-3"/>
+                </svg>
+                <span>Compound Interest Calculator</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/goals">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="6"/>
+                  <circle cx="12" cy="12" r="2"/>
+                </svg>
+                <span>Goal Tracking</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/upload-document">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                <span>Document Upload</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/reminders">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                </svg>
+                <span>Reminders</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Dashboard</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/education/topics">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+                <span>Education</span>
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -931,11 +1033,10 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
             <li
               key={`conversation-${conv.id}`}
               className={`conversation-item ${conv.id === selectedConversationId ? 'active' : ''}`}
+              onClick={() => handleConversationClick(conv.id)}
+              style={{ cursor: 'pointer' }}
             >
-              <div
-                onClick={() => handleConversationClick(conv.id)}
-                style={{ cursor: 'pointer' }}
-              >
+              <div>
                 <div>
                   {highlightText(conv.title || 'Untitled', searchQuery)}
                 </div>
@@ -974,7 +1075,10 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   }}
                   className="sidebar-action-button"
                 >
-                  ✏️
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
                 </button>
                 <button
                   type="button"
@@ -985,7 +1089,9 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   }}
                   className="sidebar-action-button"
                 >
-                  ✨
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
                 </button>
                 <button
                   type="button"
@@ -996,7 +1102,11 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   }}
                   className="sidebar-action-button"
                 >
-                  🗑️
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </li>
@@ -1057,30 +1167,56 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
 
               {/* Tag Input Area */}
               <div className="tag-input-container">
-                <input
-                  type="text"
-                  placeholder="Add a tag"
-                  value={newTag}
-                  onChange={(e) => {
-                    setNewTag(e.target.value);
-                    setTagSaved(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag();
-                    }
-                  }}
-                  className="tag-input"
-                />
-                <button
-                  onClick={addTag}
-                  disabled={!newTag.trim()}
-                  className="add-tag-button"
-                >
-                  Add Tag
-                </button>
-                {tagSaved && <span className="tag-saved-message">Saved!</span>}
+                <div className="tag-input-section">
+                  <input
+                    type="text"
+                    placeholder="Add a tag"
+                    value={newTag}
+                    onChange={(e) => {
+                      setNewTag(e.target.value);
+                      setTagSaved(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    className="tag-input"
+                  />
+                  <button
+                    onClick={addTag}
+                    disabled={!newTag.trim()}
+                    className="add-tag-button"
+                  >
+                    Add Tag
+                  </button>
+                  {tagSaved && <span className="tag-saved-message">Saved!</span>}
+                </div>
+                
+                {/* Current Tags Display */}
+                {tagsArray && tagsArray.length > 0 && (
+                  <div className="current-tags-display">
+                    <div className="current-tags-row">
+                      <span className="current-tags-label">Current tags:</span>
+                      <div className="current-tags-list">
+                        {tagsArray.map((tag, index) => (
+                          <span key={`current-tag-${index}`} className="current-tag-badge">
+                            {tag}
+                            <button
+                              type="button"
+                              className="current-tag-delete"
+                              onClick={() => removeTag(selectedConversationId, tag)}
+                              title="Remove tag"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Message Input Area */}
