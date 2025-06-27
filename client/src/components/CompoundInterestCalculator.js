@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CompoundInterestCalculator.css';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
+  const [customColor, setCustomColor] = useState('#06b6d4');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('compoundColor');
+    if (saved) setCustomColor(saved);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -12,6 +19,11 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
         [name]: parseFloat(value) || 0
       }
     });
+  };
+
+  const handleColorChange = (color) => {
+    setCustomColor(color);
+    localStorage.setItem('compoundColor', color);
   };
 
   const calculateCompoundInterest = async () => {
@@ -76,9 +88,49 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
 
   return (
     <div className="compound-interest-calculator">
-      <div className="calculator-header">
+      <div className="compound-header calculator-header" style={{ background: customColor, color: '#fff', position: 'relative' }}>
         <h2>Compound Interest Calculator</h2>
         <p>See how your money grows over time with compound interest</p>
+        <span
+          className="color-palette-btn"
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 16,
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 22,
+            color: '#fff',
+            background: 'rgba(255,255,255,0.15)',
+            borderRadius: '50%',
+            zIndex: 2,
+            cursor: 'pointer',
+            overflow: 'hidden'
+          }}
+        >
+          🎨
+          <input
+            type="color"
+            value={customColor}
+            onChange={e => handleColorChange(e.target.value)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              opacity: 0,
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              zIndex: 3
+            }}
+            title="Pick a color for the header and button"
+          />
+        </span>
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>
@@ -199,8 +251,9 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
             </div>
           </div>
 
-          <button 
-            className="calculate-btn" 
+          <button
+            className="compound-calc-btn calculate-btn"
+            style={{ background: customColor, color: '#fff', border: 'none' }}
             onClick={calculateCompoundInterest}
             disabled={loading}
           >

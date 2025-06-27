@@ -9,13 +9,13 @@
 }
 
 .calculator-header {
+  /* background: #f59e42 !important; */
   text-align: center;
   margin-bottom: 12px;
   padding: 12px;
-  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-  color: white;
+  color: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(245, 158, 66, 0.08);
   width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -26,6 +26,7 @@
   margin: 0 0 4px 0;
   font-size: 1.8rem;
   font-weight: 700;
+  color: #fff;
 }
 
 .calculator-header p {
@@ -119,22 +120,21 @@
   min-height: 40px;
   max-height: 40px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-  color: white;
+  /* background: #f59e42 !important; */
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(245, 158, 66, 0.08);
   flex-shrink: 0;
   flex-grow: 0;
 }
 
 .calculate-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+  /* background: #d97706 !important; */
 }
 
 .calculate-btn:disabled {
@@ -430,4 +430,18 @@
   .results-section {
     padding: 20px;
   }
+}
+
+.mortgage-header {
+  /* background: #f59e42; */
+  color: #fff;
+}
+.mortgage-header h2 { color: #fff; }
+.mortgage-calc-btn {
+  background: #f59e42;
+  color: #fff;
+  border: none;
+}
+.mortgage-calc-btn:hover:not(:disabled) {
+  background: #d97706 !important;
 } 
