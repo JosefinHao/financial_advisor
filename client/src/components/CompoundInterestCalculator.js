@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './CompoundInterestCalculator.css';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
+  const [showAllYears, setShowAllYears] = useState(false);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     updateState({
@@ -40,6 +42,7 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
       
       if (response.ok) {
         updateState({ results: data, loading: false });
+        setShowAllYears(false); // Reset to show first 10 years when new calculation is done
       } else {
         updateState({ 
           error: data.error || 'Failed to calculate compound interest',
@@ -67,10 +70,14 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
     return `${value.toFixed(2)}%`;
   };
 
+  const toggleYearlyProjections = () => {
+    setShowAllYears(!showAllYears);
+  };
+
   return (
     <div className="compound-interest-calculator">
       <div className="calculator-header">
-        <h2>📈 Compound Interest Calculator</h2>
+        <h2>Compound Interest Calculator</h2>
         <p>See how your money grows over time with compound interest</p>
       </div>
 
@@ -217,8 +224,8 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
               </div>
               
               <div className="summary-card">
-                <h4>Initial Investment</h4>
-                <div className="amount">{formatCurrency(results.principal)}</div>
+                <h4>Total Contributions</h4>
+                <div className="amount">{formatCurrency(results.total_contributions)}</div>
                 <p>Principal you invested</p>
               </div>
               
@@ -229,31 +236,72 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
               </div>
               
               <div className="summary-card">
-                <h4>Interest Rate</h4>
-                <div className="amount">{formatPercentage(results.interest_rate)}</div>
-                <p>Annual rate</p>
+                <h4>Real Rate</h4>
+                <div className="amount">{formatPercentage(results.real_rate)}</div>
+                <p>After inflation & taxes</p>
               </div>
             </div>
 
+            {/* Inflation Analysis */}
+            {results.inflation_rate > 0 && (
+              <div className="inflation-analysis">
+                <h4>📊 Inflation Impact Analysis</h4>
+                <div className="analysis-grid">
+                  <div className="analysis-item">
+                    <span>Nominal Final Balance:</span>
+                    <span>{formatCurrency(results.final_amount)}</span>
+                  </div>
+                  <div className="analysis-item">
+                    <span>Inflation-Adjusted Balance:</span>
+                    <span>{formatCurrency(results.inflation_adjusted_balance)}</span>
+                  </div>
+                  <div className="analysis-item">
+                    <span>Purchasing Power Loss:</span>
+                    <span className="negative">{formatCurrency(results.purchasing_power_loss)}</span>
+                  </div>
+                  <div className="analysis-item">
+                    <span>Effective Rate (After Tax):</span>
+                    <span>{formatPercentage(results.effective_rate)}</span>
+                  </div>
+                  <div className="analysis-item">
+                    <span>Real Rate (After Inflation):</span>
+                    <span>{formatPercentage(results.real_rate)}</span>
+                  </div>
+                  <div className="analysis-item">
+                    <span>Inflation Rate:</span>
+                    <span>{formatPercentage(results.inflation_rate)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Growth Analysis */}
             <div className="growth-analysis">
-              <h4>📊 Growth Analysis</h4>
+              <h4>📈 Growth Analysis</h4>
               <div className="analysis-grid">
                 <div className="analysis-item">
                   <span>Initial Investment:</span>
                   <span>{formatCurrency(results.principal)}</span>
                 </div>
                 <div className="analysis-item">
-                  <span>Final Amount:</span>
-                  <span>{formatCurrency(results.final_amount)}</span>
+                  <span>Monthly Contribution:</span>
+                  <span>{formatCurrency(results.monthly_contribution)}</span>
+                </div>
+                <div className="analysis-item">
+                  <span>Total Contributions:</span>
+                  <span>{formatCurrency(results.total_contributions)}</span>
                 </div>
                 <div className="analysis-item">
                   <span>Interest Earned:</span>
                   <span>{formatCurrency(results.interest_earned)}</span>
                 </div>
                 <div className="analysis-item">
-                  <span>Interest Rate:</span>
+                  <span>Nominal Interest Rate:</span>
                   <span>{formatPercentage(results.interest_rate)}</span>
+                </div>
+                <div className="analysis-item">
+                  <span>Tax Rate:</span>
+                  <span>{formatPercentage(results.tax_rate)}</span>
                 </div>
                 <div className="analysis-item">
                   <span>Time Period:</span>
@@ -275,22 +323,43 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
                     <thead>
                       <tr>
                         <th>Year</th>
-                        <th>Amount</th>
-                        <th>Interest Earned</th>
+                        <th>Balance</th>
+                        <th>Contributions</th>
+                        <th>Interest</th>
+                        <th>Monthly Contrib.</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {results.yearly_projections.slice(0, 10).map((projection, index) => (
+                      {results.yearly_projections.slice(0, showAllYears ? results.yearly_projections.length : 10).map((projection, index) => (
                         <tr key={index}>
                           <td>{projection.year}</td>
-                          <td>{formatCurrency(projection.amount)}</td>
-                          <td>{formatCurrency(projection.interest_earned)}</td>
+                          <td>{formatCurrency(projection.balance)}</td>
+                          <td>{formatCurrency(projection.contributions)}</td>
+                          <td>{formatCurrency(projection.interest)}</td>
+                          <td>{formatCurrency(projection.monthly_contribution)}</td>
                         </tr>
                       ))}
-                      {results.yearly_projections.length > 10 && (
+                      {results.yearly_projections.length > 10 && !showAllYears && (
                         <tr>
-                          <td colSpan="3" className="more-data">
-                            ... and {results.yearly_projections.length - 10} more years
+                          <td colSpan="5" className="more-data">
+                            <button 
+                              className="expand-years-btn" 
+                              onClick={toggleYearlyProjections}
+                            >
+                              ... and {results.yearly_projections.length - 10} more years (click to expand)
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                      {results.yearly_projections.length > 10 && showAllYears && (
+                        <tr>
+                          <td colSpan="5" className="more-data">
+                            <button 
+                              className="collapse-years-btn" 
+                              onClick={toggleYearlyProjections}
+                            >
+                              Show fewer years
+                            </button>
                           </td>
                         </tr>
                       )}

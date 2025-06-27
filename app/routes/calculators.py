@@ -394,34 +394,40 @@ def mortgage_calculator():
 
 @calculators_bp.route("/calculators/compound-interest", methods=["POST"])
 def compound_interest_calculator():
-    """Calculate compound interest growth"""
+    """Calculate comprehensive compound interest growth with inflation, taxes, and contributions"""
     try:
         data = validate_json_data(request)
         
-        # Validate required fields
-        required_fields = ["principal", "interest_rate", "time_period", "compounding_frequency"]
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
         # Extract and validate data
-        principal = float(data["principal"])
-        interest_rate = float(data["interest_rate"]) / 100  # Convert percentage to decimal
-        time_period = float(data["time_period"])
-        compounding_frequency = data["compounding_frequency"].lower()
+        principal = float(data.get("principal", 0))
+        interest_rate = float(data.get("interest_rate", 0)) / 100  # Convert percentage to decimal
+        time_period = float(data.get("time_period", 0))
+        compounding_frequency = data.get("compounding_frequency", "monthly").lower()
+        monthly_contribution = float(data.get("monthly_contribution", 0))
+        tax_rate = float(data.get("tax_rate", 0)) / 100  # Convert percentage to decimal
+        inflation_rate = float(data.get("inflation_rate", 0)) / 100  # Convert percentage to decimal
+        contribution_increase_rate = float(data.get("contribution_increase_rate", 0)) / 100  # Convert percentage to decimal
         
         # Validate input ranges
-        if principal <= 0:
-            return jsonify({"error": "Principal amount must be positive"}), 400
+        if principal < 0:
+            return jsonify({"error": "Principal amount cannot be negative"}), 400
         if interest_rate < 0 or interest_rate > 1:
             return jsonify({"error": "Interest rate must be between 0% and 100%"}), 400
         if time_period <= 0:
             return jsonify({"error": "Time period must be positive"}), 400
+        if monthly_contribution < 0:
+            return jsonify({"error": "Monthly contribution cannot be negative"}), 400
+        if tax_rate < 0 or tax_rate > 1:
+            return jsonify({"error": "Tax rate must be between 0% and 100%"}), 400
+        if inflation_rate < 0 or inflation_rate > 1:
+            return jsonify({"error": "Inflation rate must be between 0% and 100%"}), 400
+        if contribution_increase_rate < 0 or contribution_increase_rate > 1:
+            return jsonify({"error": "Contribution increase rate must be between 0% and 100%"}), 400
         
         # Define compounding frequencies
         frequency_map = {
             "annually": 1,
-            "semi-annually": 2,
+            "semiannually": 2,
             "quarterly": 4,
             "monthly": 12,
             "weekly": 52,
@@ -430,30 +436,110 @@ def compound_interest_calculator():
         }
         
         if compounding_frequency not in frequency_map:
-            return jsonify({"error": "Invalid compounding frequency. Use: annually, semi-annually, quarterly, monthly, weekly, daily, or continuously"}), 400
+            return jsonify({"error": "Invalid compounding frequency. Use: annually, semiannually, quarterly, monthly, weekly, daily, or continuously"}), 400
         
         n = frequency_map[compounding_frequency]
         
-        # Calculate compound interest
-        if n == float('inf'):  # Continuous compounding
-            amount = principal * math.exp(interest_rate * time_period)
-        else:
-            amount = principal * (1 + interest_rate / n) ** (n * time_period)
+        # Calculate effective annual rate after taxes
+        effective_rate = interest_rate * (1 - tax_rate)
         
-        interest_earned = amount - principal
+        # Calculate real rate (nominal rate minus inflation)
+        real_rate = effective_rate - inflation_rate
         
-        # Generate yearly projections
+        # Calculate compound interest with monthly contributions
+        current_balance = principal
+        total_contributions = principal
+        total_interest_earned = 0
         yearly_projections = []
+        
         for year in range(int(time_period) + 1):
-            if n == float('inf'):
-                year_amount = principal * math.exp(interest_rate * year)
+            # Calculate monthly contribution for this year (with annual increase)
+            current_monthly_contribution = monthly_contribution * (1 + contribution_increase_rate) ** year
+            
+            # Calculate year-end balance
+            if n == float('inf'):  # Continuous compounding
+                # For continuous compounding with monthly contributions, we use a simplified approach
+                year_balance = current_balance * math.exp(effective_rate)
+                year_balance += current_monthly_contribution * 12 * math.exp(effective_rate * 0.5)  # Mid-year contribution
             else:
-                year_amount = principal * (1 + interest_rate / n) ** (n * year)
+                # Calculate compound interest on current balance
+                year_balance = current_balance * (1 + effective_rate / n) ** n
+                
+                # Add monthly contributions with compound interest
+                if current_monthly_contribution > 0:
+                    monthly_rate = effective_rate / 12
+                    if monthly_rate > 0:
+                        year_balance += current_monthly_contribution * ((1 + monthly_rate) ** 12 - 1) / monthly_rate
+                    else:
+                        year_balance += current_monthly_contribution * 12
+            
+            # Calculate interest earned this year
+            year_contributions = current_monthly_contribution * 12
+            year_interest = year_balance - current_balance - year_contributions
+            
+            # Update totals
+            total_contributions += year_contributions
+            total_interest_earned += year_interest
             
             yearly_projections.append({
                 "year": year,
-                "amount": round(year_amount, 2),
-                "interest_earned": round(year_amount - principal, 2)
+                "balance": round(year_balance, 2),
+                "contributions": round(total_contributions, 2),
+                "interest": round(total_interest_earned, 2),
+                "monthly_contribution": round(current_monthly_contribution, 2)
+            })
+            
+            current_balance = year_balance
+        
+        # Calculate inflation-adjusted values
+        inflation_adjusted_balance = current_balance / (1 + inflation_rate) ** time_period
+        inflation_adjusted_contributions = total_contributions / (1 + inflation_rate) ** time_period
+        inflation_adjusted_interest = total_interest_earned / (1 + inflation_rate) ** time_period
+        
+        # Calculate purchasing power analysis
+        purchasing_power_loss = current_balance - inflation_adjusted_balance
+        
+        # Generate insights
+        insights = []
+        
+        if real_rate < 0:
+            insights.append({
+                "type": "warning",
+                "title": "Negative Real Return",
+                "message": f"After inflation ({inflation_rate*100:.1f}%) and taxes ({tax_rate*100:.1f}%), your real return is {real_rate*100:.1f}%. Consider higher-yield investments."
+            })
+        elif real_rate < 0.02:
+            insights.append({
+                "type": "info",
+                "title": "Low Real Return",
+                "message": f"Your real return after inflation and taxes is {real_rate*100:.1f}%. Consider more aggressive investments for better growth."
+            })
+        else:
+            insights.append({
+                "type": "success",
+                "title": "Good Real Return",
+                "message": f"Your real return after inflation and taxes is {real_rate*100:.1f}%. This should provide solid long-term growth."
+            })
+        
+        if inflation_rate > 0.03:
+            insights.append({
+                "type": "warning",
+                "title": "High Inflation Impact",
+                "message": f"High inflation ({inflation_rate*100:.1f}%) significantly reduces your purchasing power. Consider inflation-protected investments."
+            })
+        
+        if tax_rate > 0.25:
+            insights.append({
+                "type": "info",
+                "title": "High Tax Impact",
+                "message": f"High taxes ({tax_rate*100:.1f}%) reduce your returns. Consider tax-advantaged accounts like IRAs or 401(k)s."
+            })
+        
+        if contribution_increase_rate > 0:
+            insights.append({
+                "type": "success",
+                "title": "Increasing Contributions",
+                "message": f"Great strategy! Increasing contributions by {contribution_increase_rate*100:.1f}% annually will significantly boost your final balance."
             })
         
         return jsonify({
@@ -461,9 +547,21 @@ def compound_interest_calculator():
             "interest_rate": interest_rate * 100,
             "time_period": time_period,
             "compounding_frequency": compounding_frequency,
-            "final_amount": round(amount, 2),
-            "interest_earned": round(interest_earned, 2),
-            "yearly_projections": yearly_projections
+            "monthly_contribution": monthly_contribution,
+            "tax_rate": tax_rate * 100,
+            "inflation_rate": inflation_rate * 100,
+            "contribution_increase_rate": contribution_increase_rate * 100,
+            "final_amount": round(current_balance, 2),
+            "total_contributions": round(total_contributions, 2),
+            "interest_earned": round(total_interest_earned, 2),
+            "effective_rate": round(effective_rate * 100, 2),
+            "real_rate": round(real_rate * 100, 2),
+            "inflation_adjusted_balance": round(inflation_adjusted_balance, 2),
+            "inflation_adjusted_contributions": round(inflation_adjusted_contributions, 2),
+            "inflation_adjusted_interest": round(inflation_adjusted_interest, 2),
+            "purchasing_power_loss": round(purchasing_power_loss, 2),
+            "yearly_projections": yearly_projections,
+            "insights": insights
         })
         
     except ValueError as e:

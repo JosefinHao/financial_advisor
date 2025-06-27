@@ -1,0 +1,601 @@
+/* NetWorthPage.css */
+
+/* Container and Layout */
+.net-worth-calculator {
+  max-width: none;
+  margin: 0;
+  padding: 16px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Styles */
+.calculator-header {
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  flex-shrink: 0;
+}
+
+.calculator-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.calculator-header p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Calculator Container */
+.calculator-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  width: 100%;
+}
+
+.calculator-container.has-results {
+  display: grid;
+  grid-template-columns: 0.45fr 0.55fr;
+  width: 100%;
+  margin: 0 auto;
+  align-items: stretch;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Input Section */
+.input-section {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
+}
+
+.input-section h3 {
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.form-section h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-group label {
+  margin-bottom: 3px;
+  font-weight: 600;
+  color: #34495e;
+  font-size: 0.85rem;
+}
+
+.form-group input {
+  padding: 6px 8px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Calculate Button */
+.calculate-btn {
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  flex-shrink: 0;
+  flex-grow: 0;
+  margin-top: auto;
+}
+
+.calculate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.calculate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fee;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+/* Results Section */
+.results-section {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  flex: 1;
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
+}
+
+.results-section.hidden {
+  display: none;
+}
+
+.results-section.visible {
+  display: block;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 20px;
+}
+
+.placeholder-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  color: #374151;
+}
+
+.placeholder-content p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.results-section h3 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Net Worth Card */
+.net-worth-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.net-worth-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.net-worth-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.net-worth-change {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.net-worth-change.positive {
+  color: #10b981;
+}
+
+.net-worth-change.negative {
+  color: #ef4444;
+}
+
+.net-worth-breakdown {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.breakdown-item {
+  text-align: center;
+}
+
+.breakdown-item .label {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.breakdown-item .amount {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Assets and Liabilities Grid */
+.assets-liabilities-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section-card {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #e1e5e9;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.breakdown-item {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e1e5e9;
+}
+
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.item-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.item-percentage {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.item-amount {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #e1e5e9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.assets-fill {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.liabilities-fill {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Trends Chart */
+.trends-chart {
+  margin-top: 12px;
+}
+
+.chart-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  height: 120px;
+  gap: 8px;
+}
+
+.chart-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.bar-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.bar-container {
+  width: 100%;
+  height: 80px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: height 0.3s ease;
+}
+
+.bar-value {
+  font-size: 0.7rem;
+  color: #374151;
+  margin-top: 4px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Insights Grid */
+.insights-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.insight-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+}
+
+.insight-card.positive {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.insight-card.warning {
+  background: #fffbeb;
+  border-color: #fed7aa;
+}
+
+.insight-card.info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.insight-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.insight-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.insight-content p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.action-btn.info:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.action-btn.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.action-btn.success:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calculator-container.has-results {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assets-liabilities-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    min-width: auto;
+  }
+
+  .net-worth-amount {
+    font-size: 2rem;
+  }
+
+  .net-worth-breakdown {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart-container {
+    height: 100px;
+  }
+
+  .bar-container {
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .net-worth-calculator {
+    padding: 12px;
+  }
+
+  .calculator-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .input-section,
+  .results-section {
+    padding: 12px;
+  }
+
+  .net-worth-card {
+    padding: 16px;
+  }
+
+  .net-worth-amount {
+    font-size: 1.8rem;
+  }
+
+  .chart-container {
+    height: 80px;
+  }
+
+  .bar-container {
+    height: 50px;
+  }
+
+  .bar-value {
+    font-size: 0.65rem;
+  }
+} 

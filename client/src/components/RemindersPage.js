@@ -221,7 +221,7 @@ const RemindersPage = () => {
   return (
     <div className="reminders-page">
       <div className="reminders-header">
-        <h2>⏰ Financial Reminders</h2>
+        <h2>Financial Reminders</h2>
         <p>Stay on top of your financial obligations with smart reminders and tracking</p>
       </div>
 
@@ -448,81 +448,81 @@ const RemindersPage = () => {
           filteredReminders.map(reminder => {
             const dueStatus = getDueStatus(reminder.dueDate, reminder.status);
             const daysUntil = getDaysUntilDue(reminder.dueDate);
-            
             return (
-              <div key={reminder.id} className={`reminder-card ${dueStatus}`}>
-                <div className="reminder-header">
-                  <div className="reminder-icon">
-                    {getCategoryIcon(reminder.category)}
-                  </div>
-                  <div className="reminder-info">
-                    <h4>{reminder.title}</h4>
-                    <p>{reminder.description}</p>
-                    <div className="reminder-meta">
-                      <span className="category">{reminder.category}</span>
-                      <span className="frequency">{getFrequencyText(reminder.frequency)}</span>
+              <div key={reminder.id} className={`goal-card ${dueStatus}`}>
+                <div className="goal-header">
+                  <div className="goal-title-section">
+                    <div 
+                      className="category-badge"
+                      style={{ backgroundColor: '#667eea' }}
+                    >
+                      {getCategoryIcon(reminder.category)}
+                    </div>
+                    <div className="goal-info">
+                      <h3>{reminder.title}</h3>
+                      <p>{reminder.description}</p>
                     </div>
                   </div>
-                  <div className="reminder-amount">
-                    {reminder.amount && <span>${reminder.amount.toLocaleString()}</span>}
-                  </div>
-                </div>
-                
-                <div className="reminder-details">
-                  <div className="detail-item">
-                    <span className="label">Due Date:</span>
-                    <span className="value">{new Date(reminder.dueDate).toLocaleDateString()}</span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="label">Status:</span>
-                    <span className={`status-badge ${reminder.status}`}>
-                      {reminder.status}
-                    </span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="label">Priority:</span>
+                  <div className="goal-actions">
                     <span 
                       className="priority-badge"
                       style={{ backgroundColor: getPriorityColor(reminder.priority) }}
                     >
                       {reminder.priority}
                     </span>
+                    <span 
+                      className="status-badge"
+                      style={{ backgroundColor: getStatusColor(reminder.status) }}
+                    >
+                      {reminder.status}
+                    </span>
                   </div>
-                  
-                  {dueStatus !== 'completed' && (
-                    <div className="detail-item">
-                      <span className="label">Time Left:</span>
-                      <span className={`time-left ${dueStatus}`}>
-                        {dueStatus === 'overdue' 
-                          ? `${Math.abs(daysUntil)} days overdue`
-                          : `${daysUntil} days left`
-                        }
-                      </span>
-                    </div>
-                  )}
                 </div>
-                
-                <div className="reminder-actions">
+
+                <div className="goal-details">
+                  <div className="detail-item">
+                    <span className="label">Due Date:</span>
+                    <span className="value">{new Date(reminder.dueDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Amount:</span>
+                    <span className="value">{reminder.amount ? `$${reminder.amount.toLocaleString()}` : '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Category:</span>
+                    <span className="value">{reminder.category}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Frequency:</span>
+                    <span className="value">{getFrequencyText(reminder.frequency)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Priority:</span>
+                    <span className="value">{reminder.priority}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Time Left:</span>
+                    <span className={`value ${dueStatus}`}>{dueStatus === 'overdue' ? `${Math.abs(daysUntil)} days overdue` : dueStatus === 'completed' ? 'Completed' : `${daysUntil} days`}</span>
+                  </div>
+                </div>
+
+                <div className="goal-actions-bottom">
                   {reminder.status !== 'completed' && (
                     <button
-                      className="complete-btn"
+                      className="action-btn update-btn"
                       onClick={() => handleStatusChange(reminder.id, 'completed')}
                     >
                       Mark Complete
                     </button>
                   )}
-                  
                   <button
-                    className="edit-btn"
+                    className="action-btn edit-btn"
                     onClick={() => handleEdit(reminder)}
                   >
                     Edit
                   </button>
-                  
                   <button
-                    className="delete-btn"
+                    className="action-btn delete-btn"
                     onClick={() => handleDelete(reminder.id)}
                   >
                     Delete

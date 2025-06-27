@@ -158,7 +158,7 @@ const DocumentUpload = () => {
     return (
         <div className="document-upload-container">
             <div className="header">
-                <h2 className="title">📄 Document Upload & AI Analysis</h2>
+                <h2 className="title">Document Upload & AI Analysis</h2>
                 <p className="subtitle">Upload your financial documents (PDF, text, CSV, Excel) and get intelligent insights.</p>
             </div>
 

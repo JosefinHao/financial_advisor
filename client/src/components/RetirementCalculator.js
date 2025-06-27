@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './RetirementCalculator.css';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
+  const [showAllYears, setShowAllYears] = useState(false);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     updateState({
@@ -28,6 +30,7 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
       
       if (response.ok) {
         updateState({ results: data, loading: false });
+        setShowAllYears(false); // Reset to show first 10 years when new calculation is done
       } else {
         updateState({ 
           error: data.error || 'Failed to calculate retirement projection',
@@ -55,10 +58,14 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
     return `${value.toFixed(1)}%`;
   };
 
+  const toggleYearlyProjections = () => {
+    setShowAllYears(!showAllYears);
+  };
+
   return (
     <div className="retirement-calculator">
       <div className="calculator-header">
-        <h2>🏖️ Retirement Calculator</h2>
+        <h2>Retirement Calculator</h2>
         <p>Plan your retirement with comprehensive projections and analysis</p>
       </div>
 
@@ -299,7 +306,7 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
                     </tr>
                   </thead>
                   <tbody>
-                    {results.yearly_projections.slice(0, 10).map((projection, index) => (
+                    {results.yearly_projections.slice(0, showAllYears ? results.yearly_projections.length : 10).map((projection, index) => (
                       <tr key={index}>
                         <td>{projection.year}</td>
                         <td>{projection.age}</td>
@@ -308,10 +315,27 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
                         <td>{formatCurrency(projection.interest)}</td>
                       </tr>
                     ))}
-                    {results.yearly_projections.length > 10 && (
+                    {results.yearly_projections.length > 10 && !showAllYears && (
                       <tr>
                         <td colSpan="5" className="more-data">
-                          ... and {results.yearly_projections.length - 10} more years
+                          <button 
+                            className="expand-years-btn" 
+                            onClick={toggleYearlyProjections}
+                          >
+                            ... and {results.yearly_projections.length - 10} more years (click to expand)
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                    {results.yearly_projections.length > 10 && showAllYears && (
+                      <tr>
+                        <td colSpan="5" className="more-data">
+                          <button 
+                            className="collapse-years-btn" 
+                            onClick={toggleYearlyProjections}
+                          >
+                            Show fewer years
+                          </button>
                         </td>
                       </tr>
                     )}

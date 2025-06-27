@@ -225,7 +225,7 @@ function GoalsPage() {
   return (
     <div className="goals-container">
       <div className="goals-header">
-        <h2>🏁 Goal Tracking</h2>
+        <h2>Goal Tracking</h2>
         <p>Set financial targets, track your progress, and achieve your dreams.</p>
       </div>
 

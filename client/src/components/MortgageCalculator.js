@@ -58,7 +58,7 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
   return (
     <div className="mortgage-calculator">
       <div className="calculator-header">
-        <h2>🏠 Mortgage Calculator</h2>
+        <h2>Mortgage Calculator</h2>
         <p>Calculate your monthly payments and analyze your mortgage options</p>
       </div>
 

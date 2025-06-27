@@ -4,6 +4,7 @@ import './App.css';
 import DocumentUpload from './components/DocumentUpload';
 import RemindersPage from './components/RemindersPage';
 import DashboardPage from './components/DashboardPage';
+import NetWorthPage from './components/NetWorthPage';
 import RetirementCalculator from './components/RetirementCalculator';
 import MortgageCalculator from './components/MortgageCalculator';
 import CompoundInterestCalculator from './components/CompoundInterestCalculator';
@@ -787,7 +788,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
 
     return (
       <div className="education-container">
-        <h2>📚 Financial Education</h2>
+        <h2>Financial Education</h2>
         <p>Learn essential financial concepts to improve your financial literacy and make better money decisions.</p>
 
         <div className="education-layout">
@@ -863,7 +864,14 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
             <li>
               <Link to="/calculators/retirement">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                  <line x1="8" y1="6" x2="16" y2="6"/>
+                  <line x1="8" y1="10" x2="10" y2="10"/>
+                  <line x1="12" y1="10" x2="14" y2="10"/>
+                  <line x1="8" y1="14" x2="10" y2="14"/>
+                  <line x1="12" y1="14" x2="14" y2="14"/>
+                  <line x1="8" y1="18" x2="10" y2="18"/>
+                  <line x1="12" y1="18" x2="14" y2="18"/>
                 </svg>
                 <span>Retirement Calculator</span>
               </Link>
@@ -885,6 +893,14 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   <path d="M3 20l2-1 2-1 2-1 2-2 2-2 2-2 2-3 2-3"/>
                 </svg>
                 <span>Compound Interest Calculator</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/net-worth">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <span>Net Worth</span>
               </Link>
             </li>
             <li>
@@ -1211,6 +1227,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/education/topics" element={<EducationPage />} />
+          <Route path="/net-worth" element={<NetWorthPage />} />
 
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -1235,15 +1252,12 @@ function BackToTopButton() {
   }, [location.pathname]);
 
   const handleClick = () => {
-    if (location.pathname !== '/') {
-      navigate('/');
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    // Always scroll to top of current page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return show ? (
-    <button className="back-to-top-btn" onClick={handleClick} title="Back to top or main page">
+    <button className="back-to-top-btn" onClick={handleClick} title="Back to top">
       ⬆ Back to Top
     </button>
   ) : null;

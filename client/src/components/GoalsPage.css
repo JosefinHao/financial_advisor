@@ -243,6 +243,13 @@
   color: #ff9800;
 }
 
+.goal-details .detail-item:last-child .value {
+  text-align: center;
+  width: 100%;
+  display: block;
+  white-space: nowrap;
+}
+
 /* Goal Actions Bottom */
 .goal-actions-bottom {
   display: flex;
