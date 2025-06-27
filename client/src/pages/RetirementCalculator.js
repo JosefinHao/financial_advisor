@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import './RetirementCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
-import DualColorPicker from './DualColorPicker';
+import DualColorPicker from '../ui/DualColorPicker';
+import ResetColorButton from '../ui/ResetColorButton';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
-  const [customColor, setCustomColor] = useState('#667eea');
-  const [customColor2, setCustomColor2] = useState('#764ba2');
+  const [customColor, setCustomColor] = useState('#4f8cff');
+  const [customColor2, setCustomColor2] = useState('#7f53ac');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('retirementColor');
     const savedColor2 = localStorage.getItem('retirementColor2');
-    if (savedColor) setCustomColor(savedColor);
-    if (savedColor2) setCustomColor2(savedColor2);
+    
+    // Only use saved colors if they are valid hex color strings
+    if (savedColor && savedColor.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor(savedColor);
+    }
+    if (savedColor2 && savedColor2.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor2(savedColor2);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -83,6 +90,13 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
     localStorage.setItem('retirementColor2', color);
   };
 
+  const resetToDefaultColors = () => {
+    setCustomColor('#4f8cff');
+    setCustomColor2('#7f53ac');
+    localStorage.removeItem('retirementColor');
+    localStorage.removeItem('retirementColor2');
+  };
+
   const gradientStyle = generateGradient(customColor, customColor2);
 
   return (
@@ -99,6 +113,8 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
           storageKey1="retirementColor"
           storageKey2="retirementColor2"
         />
+        
+        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>

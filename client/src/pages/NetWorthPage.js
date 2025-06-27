@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './NetWorthPage.css';
 import { generateGradient } from '../utils/gradientUtils';
-import DualColorPicker from './DualColorPicker';
+import DualColorPicker from '../ui/DualColorPicker';
+import ResetColorButton from '../ui/ResetColorButton';
 
 const NetWorthPage = () => {
   const navigate = useNavigate();
@@ -10,8 +11,8 @@ const NetWorthPage = () => {
   const [error, setError] = useState(null);
   const [netWorthData, setNetWorthData] = useState(null);
   const [showResults, setShowResults] = useState(false);
-  const [customColor, setCustomColor] = useState('#a8edea');
-  const [customColor2, setCustomColor2] = useState('#fed6e3');
+  const [customColor, setCustomColor] = useState('#0f766e');
+  const [customColor2, setCustomColor2] = useState('#3730a3');
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   // Form data state
@@ -38,8 +39,14 @@ const NetWorthPage = () => {
   useEffect(() => {
     const savedColor = localStorage.getItem('networthColor');
     const savedColor2 = localStorage.getItem('networthColor2');
-    if (savedColor) setCustomColor(savedColor);
-    if (savedColor2) setCustomColor2(savedColor2);
+    
+    // Only use saved colors if they are valid hex color strings
+    if (savedColor && savedColor.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor(savedColor);
+    }
+    if (savedColor2 && savedColor2.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor2(savedColor2);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -58,6 +65,13 @@ const NetWorthPage = () => {
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('networthColor2', color);
+  };
+
+  const resetToDefaultColors = () => {
+    setCustomColor('#0f766e');
+    setCustomColor2('#3730a3');
+    localStorage.removeItem('networthColor');
+    localStorage.removeItem('networthColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -203,6 +217,8 @@ const NetWorthPage = () => {
           storageKey1="networthColor"
           storageKey2="networthColor2"
         />
+        
+        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${showResults ? 'has-results' : ''}`}>

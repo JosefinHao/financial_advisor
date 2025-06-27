@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import './MortgageCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
-import DualColorPicker from './DualColorPicker';
+import DualColorPicker from '../ui/DualColorPicker';
+import ResetColorButton from '../ui/ResetColorButton';
 
 const MortgageCalculator = ({ formData, results, loading, error, updateState }) => {
-  const [customColor, setCustomColor] = useState('#f093fb');
-  const [customColor2, setCustomColor2] = useState('#f5576c');
+  const [customColor, setCustomColor] = useState('#43cea2');
+  const [customColor2, setCustomColor2] = useState('#185a9d');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('mortgageColor');
     const savedColor2 = localStorage.getItem('mortgageColor2');
-    if (savedColor) setCustomColor(savedColor);
-    if (savedColor2) setCustomColor2(savedColor2);
+    
+    // Only use saved colors if they are valid hex color strings
+    if (savedColor && savedColor.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor(savedColor);
+    }
+    if (savedColor2 && savedColor2.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor2(savedColor2);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -32,6 +39,13 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('mortgageColor2', color);
+  };
+
+  const resetToDefaultColors = () => {
+    setCustomColor('#43cea2');
+    setCustomColor2('#185a9d');
+    localStorage.removeItem('mortgageColor');
+    localStorage.removeItem('mortgageColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -93,6 +107,8 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
           storageKey1="mortgageColor"
           storageKey2="mortgageColor2"
         />
+        
+        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
-import DocumentUpload from './components/DocumentUpload';
-import RemindersPage from './components/RemindersPage';
-import DashboardPage from './components/DashboardPage';
-import NetWorthPage from './components/NetWorthPage';
-import RetirementCalculator from './components/RetirementCalculator';
-import MortgageCalculator from './components/MortgageCalculator';
-import CompoundInterestCalculator from './components/CompoundInterestCalculator';
-import GoalsPage from './components/GoalsPage';
+import DocumentUpload from './pages/DocumentUpload';
+import RemindersPage from './pages/RemindersPage';
+import DashboardPage from './pages/DashboardPage';
+import NetWorthPage from './pages/NetWorthPage';
+import RetirementCalculator from './pages/RetirementCalculator';
+import MortgageCalculator from './pages/MortgageCalculator';
+import CompoundInterestCalculator from './pages/CompoundInterestCalculator';
+import GoalsPage from './pages/GoalsPage';
 
 // Calculator State Context
 const CalculatorStateContext = createContext();

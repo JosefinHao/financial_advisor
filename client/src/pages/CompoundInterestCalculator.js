@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import './CompoundInterestCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
-import DualColorPicker from './DualColorPicker';
+import DualColorPicker from '../ui/DualColorPicker';
+import ResetColorButton from '../ui/ResetColorButton';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
-  const [customColor, setCustomColor] = useState('#4facfe');
-  const [customColor2, setCustomColor2] = useState('#00f2fe');
+  const [customColor, setCustomColor] = useState('#5f2c82');
+  const [customColor2, setCustomColor2] = useState('#49a09d');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('compoundColor');
     const savedColor2 = localStorage.getItem('compoundColor2');
-    if (savedColor) setCustomColor(savedColor);
-    if (savedColor2) setCustomColor2(savedColor2);
+    
+    // Only use saved colors if they are valid hex color strings
+    if (savedColor && savedColor.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor(savedColor);
+    }
+    if (savedColor2 && savedColor2.match(/^#[0-9A-F]{6}$/i)) {
+      setCustomColor2(savedColor2);
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -33,6 +40,13 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('compoundColor2', color);
+  };
+
+  const resetToDefaultColors = () => {
+    setCustomColor('#5f2c82');
+    setCustomColor2('#49a09d');
+    localStorage.removeItem('compoundColor');
+    localStorage.removeItem('compoundColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -111,6 +125,8 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
           storageKey1="compoundColor"
           storageKey2="compoundColor2"
         />
+        
+        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>
