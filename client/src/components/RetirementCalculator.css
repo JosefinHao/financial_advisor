@@ -137,10 +137,6 @@
   flex-grow: 0;
 }
 
-.calculate-btn:hover:not(:disabled) {
-  /* background: #4338ca !important; */
-}
-
 .calculate-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
@@ -499,5 +495,5 @@
   border: none;
 }
 .retirement-calc-btn:hover:not(:disabled) {
-  background: #4338ca !important;
+  /* No color change on hover */
 } 

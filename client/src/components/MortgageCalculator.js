@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './MortgageCalculator.css';
+import { generateGradient } from '../utils/gradientUtils';
+import DualColorPicker from './DualColorPicker';
 
 const MortgageCalculator = ({ formData, results, loading, error, updateState }) => {
-  const [customColor, setCustomColor] = useState('#f59e42');
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState('#f093fb');
+  const [customColor2, setCustomColor2] = useState('#f5576c');
 
   useEffect(() => {
-    const saved = localStorage.getItem('mortgageColor');
-    if (saved) setCustomColor(saved);
+    const savedColor = localStorage.getItem('mortgageColor');
+    const savedColor2 = localStorage.getItem('mortgageColor2');
+    if (savedColor) setCustomColor(savedColor);
+    if (savedColor2) setCustomColor2(savedColor2);
   }, []);
 
   const handleInputChange = (e) => {
@@ -24,6 +28,13 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
     setCustomColor(color);
     localStorage.setItem('mortgageColor', color);
   };
+
+  const handleColor2Change = (color) => {
+    setCustomColor2(color);
+    localStorage.setItem('mortgageColor2', color);
+  };
+
+  const gradientStyle = generateGradient(customColor, customColor2);
 
   const calculateMortgage = async () => {
     updateState({ loading: true, error: '' });
@@ -70,49 +81,18 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
 
   return (
     <div className="mortgage-calculator">
-      <div className="mortgage-header calculator-header" style={{ background: customColor, color: '#fff', position: 'relative' }}>
+      <div className="mortgage-header calculator-header" style={{ background: gradientStyle, color: '#fff', position: 'relative' }}>
         <h2>Mortgage Calculator</h2>
         <p>Estimate your mortgage payments and costs</p>
-        <span
-          className="color-palette-btn"
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 16,
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-            color: '#fff',
-            background: 'rgba(255,255,255,0.15)',
-            borderRadius: '50%',
-            zIndex: 2,
-            cursor: 'pointer',
-            overflow: 'hidden'
-          }}
-        >
-          🎨
-          <input
-            type="color"
-            value={customColor}
-            onChange={e => handleColorChange(e.target.value)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              opacity: 0,
-              cursor: 'pointer',
-              border: 'none',
-              background: 'none',
-              zIndex: 3
-            }}
-            title="Pick a color for the header and button"
-          />
-        </span>
+        
+        <DualColorPicker
+          color1={customColor}
+          color2={customColor2}
+          onColor1Change={handleColorChange}
+          onColor2Change={handleColor2Change}
+          storageKey1="mortgageColor"
+          storageKey2="mortgageColor2"
+        />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>
@@ -230,7 +210,7 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
 
           <button
             className="mortgage-calc-btn calculate-btn"
-            style={{ background: customColor, color: '#fff', border: 'none' }}
+            style={{ background: gradientStyle, color: '#fff', border: 'none' }}
             onClick={calculateMortgage}
             disabled={loading}
           >

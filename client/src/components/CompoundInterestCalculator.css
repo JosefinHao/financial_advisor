@@ -135,10 +135,6 @@
   flex-grow: 0;
 }
 
-.calculate-btn:hover:not(:disabled) {
-  /* background: #0e7490 !important; */
-}
-
 .calculate-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
@@ -518,6 +514,6 @@
   border: none;
 }
 .compound-calc-btn:hover:not(:disabled) {
-  background: #0e7490 !important;
+  /* No color change on hover */
 }
  
