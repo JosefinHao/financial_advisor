@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './RetirementCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
-import ResetColorButton from '../ui/ResetColorButton';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
@@ -90,13 +89,6 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
     localStorage.setItem('retirementColor2', color);
   };
 
-  const resetToDefaultColors = () => {
-    setCustomColor('#4f8cff');
-    setCustomColor2('#7f53ac');
-    localStorage.removeItem('retirementColor');
-    localStorage.removeItem('retirementColor2');
-  };
-
   const gradientStyle = generateGradient(customColor, customColor2);
 
   return (
@@ -112,9 +104,9 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
           onColor2Change={handleColor2Change}
           storageKey1="retirementColor"
           storageKey2="retirementColor2"
+          defaultColor1="#4f8cff"
+          defaultColor2="#7f53ac"
         />
-        
-        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>

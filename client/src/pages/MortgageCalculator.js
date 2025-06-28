@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './MortgageCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
-import ResetColorButton from '../ui/ResetColorButton';
 
 const MortgageCalculator = ({ formData, results, loading, error, updateState }) => {
   const [customColor, setCustomColor] = useState('#43cea2');
@@ -39,13 +38,6 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('mortgageColor2', color);
-  };
-
-  const resetToDefaultColors = () => {
-    setCustomColor('#43cea2');
-    setCustomColor2('#185a9d');
-    localStorage.removeItem('mortgageColor');
-    localStorage.removeItem('mortgageColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -106,9 +98,9 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
           onColor2Change={handleColor2Change}
           storageKey1="mortgageColor"
           storageKey2="mortgageColor2"
+          defaultColor1="#43cea2"
+          defaultColor2="#185a9d"
         />
-        
-        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>

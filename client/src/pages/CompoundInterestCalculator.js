@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './CompoundInterestCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
-import ResetColorButton from '../ui/ResetColorButton';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
@@ -40,13 +39,6 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('compoundColor2', color);
-  };
-
-  const resetToDefaultColors = () => {
-    setCustomColor('#5f2c82');
-    setCustomColor2('#49a09d');
-    localStorage.removeItem('compoundColor');
-    localStorage.removeItem('compoundColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -124,9 +116,9 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
           onColor2Change={handleColor2Change}
           storageKey1="compoundColor"
           storageKey2="compoundColor2"
+          defaultColor1="#5f2c82"
+          defaultColor2="#49a09d"
         />
-        
-        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${results ? 'has-results' : ''}`}>

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import './NetWorthPage.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
-import ResetColorButton from '../ui/ResetColorButton';
 
 const NetWorthPage = () => {
   const navigate = useNavigate();
@@ -65,13 +64,6 @@ const NetWorthPage = () => {
   const handleColor2Change = (color) => {
     setCustomColor2(color);
     localStorage.setItem('networthColor2', color);
-  };
-
-  const resetToDefaultColors = () => {
-    setCustomColor('#0f766e');
-    setCustomColor2('#3730a3');
-    localStorage.removeItem('networthColor');
-    localStorage.removeItem('networthColor2');
   };
 
   const gradientStyle = generateGradient(customColor, customColor2);
@@ -216,9 +208,9 @@ const NetWorthPage = () => {
           onColor2Change={handleColor2Change}
           storageKey1="networthColor"
           storageKey2="networthColor2"
+          defaultColor1="#0f766e"
+          defaultColor2="#3730a3"
         />
-        
-        <ResetColorButton onReset={resetToDefaultColors} />
       </div>
 
       <div className={`calculator-container ${showResults ? 'has-results' : ''}`}>

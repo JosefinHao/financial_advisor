@@ -8,6 +8,8 @@ const DualColorPicker = ({
   onColor2Change, 
   storageKey1, 
   storageKey2,
+  defaultColor1,
+  defaultColor2,
   position = { top: 12, right: 16 }
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -33,6 +35,14 @@ const DualColorPicker = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showColorPicker]);
+
+  const handleReset = () => {
+    onColor1Change(defaultColor1);
+    onColor2Change(defaultColor2);
+    // Clear localStorage
+    if (storageKey1) localStorage.removeItem(storageKey1);
+    if (storageKey2) localStorage.removeItem(storageKey2);
+  };
 
   return (
     <>
@@ -82,7 +92,7 @@ const DualColorPicker = ({
             Customize Gradient Colors
           </div>
           
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Color 1</div>
               <input
@@ -114,6 +124,42 @@ const DualColorPicker = ({
               />
             </div>
           </div>
+
+          {/* Reset Button */}
+          <button
+            onClick={handleReset}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              backgroundColor: '#f8f9fa',
+              border: '1px solid #dee2e6',
+              borderRadius: '4px',
+              color: '#6c757d',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#e9ecef';
+              e.target.style.borderColor = '#adb5bd';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#f8f9fa';
+              e.target.style.borderColor = '#dee2e6';
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M3 21v-5h5"/>
+            </svg>
+            Reset to Default
+          </button>
         </div>
       )}
     </>
