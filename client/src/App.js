@@ -10,6 +10,23 @@ import MortgageCalculator from './pages/MortgageCalculator';
 import CompoundInterestCalculator from './pages/CompoundInterestCalculator';
 import GoalsPage from './pages/GoalsPage';
 
+// Custom hook for managing input focus
+function useInputFocus() {
+  const inputRef = useRef(null);
+  
+  const focusInput = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+  
+  const focusInputDelayed = (delay = 100) => {
+    setTimeout(focusInput, delay);
+  };
+  
+  return { inputRef, focusInput, focusInputDelayed };
+}
+
 // Calculator State Context
 const CalculatorStateContext = createContext();
 
@@ -57,6 +74,41 @@ function CalculatorStateProvider({ children }) {
         tax_rate: 15,
         inflation_rate: 2.5,
         contribution_increase_rate: 3
+      },
+      results: null,
+      loading: false,
+      error: ''
+    },
+    netWorth: {
+      formData: {
+        // Assets
+        cash_savings: 0,
+        checking_accounts: 0,
+        savings_accounts: 0,
+        investment_accounts: 0,
+        retirement_accounts: 0,
+        real_estate: 0,
+        primary_residence: 0,
+        rental_properties: 0,
+        vehicles: 0,
+        other_assets: 0,
+        
+        // Liabilities
+        credit_cards: 0,
+        student_loans: 0,
+        car_loans: 0,
+        mortgage: 0,
+        home_equity_loan: 0,
+        rental_mortgages: 0,
+        personal_loans: 0,
+        other_debt: 0,
+        
+        // Multiple houses support
+        houses: [{
+          value: 0,
+          mortgage: 0,
+          equity_loan: 0
+        }]
       },
       results: null,
       loading: false,
@@ -152,7 +204,21 @@ function CompoundInterestCalculatorWrapper() {
   );
 }
 
+function NetWorthPageWrapper() {
+  const { calculatorStates, updateCalculatorState } = useCalculatorState();
+  return (
+    <NetWorthPage 
+      formData={calculatorStates.netWorth.formData}
+      results={calculatorStates.netWorth.results}
+      loading={calculatorStates.netWorth.loading}
+      error={calculatorStates.netWorth.error}
+      updateState={(updates) => updateCalculatorState('netWorth', updates)}
+    />
+  );
+}
+
 function parseMarkdown(text) {
+  if (typeof text !== 'string') return '';
   // Escape HTML first
   let html = text
     .replace(/&/g, "&amp;")
@@ -237,21 +303,49 @@ function AppContent() {
   const [tagSaved, setTagSaved] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
 
   const chatEndRef = useRef(null);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { inputRef: messageInputRef, focusInput, focusInputDelayed } = useInputFocus();
 
   useEffect(() => {
     refreshConversations();
   }, []);
 
+  // Load conversation when selectedConversationId changes
   useEffect(() => {
     if (selectedConversationId) {
       loadConversation(selectedConversationId);
+    } else {
+      // Clear chat history when no conversation is selected
+      setChatHistory([]);
+      setTagsArray([]);
     }
   }, [selectedConversationId]);
+
+  // Auto-scroll only when shouldAutoScroll is true
+  useEffect(() => {
+    if (chatEndRef.current && shouldAutoScroll) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setShouldAutoScroll(false); // Reset after scrolling
+    }
+  }, [chatHistory, shouldAutoScroll]);
+
+  // Keyboard shortcut to focus input (Ctrl+L or Cmd+L)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        focusInput();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [focusInput]);
 
   // Enhanced sidebar resizing functionality
   useEffect(() => {
@@ -308,16 +402,18 @@ function AppContent() {
     try {
       const res = await fetch('http://127.0.0.1:5000/api/v1/conversations');
       const data = await res.json();
-      setConversations(data);
+      // Ensure data is always an array
+      const conversationsArray = Array.isArray(data) ? data : [];
+      setConversations(conversationsArray);
 
       // Only set to first conversation if we don't have a selection AND we're not preserving
-      if (!selectedConversationId && !preserveSelection && data.length > 0) {
-        setSelectedConversationId(data[0].id);
+      if (!selectedConversationId && !preserveSelection && conversationsArray.length > 0) {
+        setSelectedConversationId(conversationsArray[0].id);
       }
       
       // If we're preserving selection, make sure the selected conversation still exists
       if (preserveSelection && selectedConversationId) {
-        const conversationExists = data.some(conv => conv.id === selectedConversationId);
+        const conversationExists = conversationsArray.some(conv => conv.id === selectedConversationId);
         if (!conversationExists) {
           setSelectedConversationId(null);
           setChatHistory([]);
@@ -326,6 +422,8 @@ function AppContent() {
       }
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
+      // Set conversations to empty array on error
+      setConversations([]);
     }
   };
 
@@ -356,6 +454,11 @@ function AppContent() {
     setChatHistory(prev => [...prev, newMsg]);
     setUserMessage('');
     setLoading(true);
+    
+    // Always auto-scroll to show the new user message
+    setTimeout(() => {
+      setShouldAutoScroll(true);
+    }, 0);
 
     try {
       const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}`, {
@@ -365,11 +468,23 @@ function AppContent() {
       });
       const data = await res.json();
       setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      
+      // Always auto-scroll to show the AI response
+      setTimeout(() => {
+        setShouldAutoScroll(true);
+      }, 0);
     } catch (err) {
       console.error("Failed to send message:", err);
       setChatHistory(prev => [...prev, { role: 'assistant', content: 'Error: Failed to get reply.' }]);
+      
+      // Always auto-scroll to show the error message
+      setTimeout(() => {
+        setShouldAutoScroll(true);
+      }, 0);
     } finally {
       setLoading(false);
+      // Only focus input after sending a message
+      focusInputDelayed(100);
     }
   };
 
@@ -393,6 +508,11 @@ function AppContent() {
 
   // Enhanced search function to filter conversations
   const filterConversations = (conversations, query) => {
+    // Ensure conversations is always an array
+    if (!Array.isArray(conversations)) {
+      return [];
+    }
+    
     if (!query.trim()) return conversations;
 
     const searchTerm = query.toLowerCase();
@@ -944,15 +1064,6 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                 <span>Dashboard</span>
               </Link>
             </li>
-            <li>
-              <Link to="/education/topics">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                </svg>
-                <span>Education</span>
-              </Link>
-            </li>
           </ul>
         </nav>
 
@@ -1153,6 +1264,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
+                        e.stopPropagation();
                         addTag();
                       }
                     }}
@@ -1192,29 +1304,46 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
               </div>
 
               {/* Message Input Area */}
-              <div className="message-input-container">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  sendMessage();
+                }}
+                className="message-input-container"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+              >
                 <textarea
                   value={userMessage}
                   onChange={(e) => setUserMessage(e.target.value)}
                   rows={2}
-                  className="message-textarea"
+                  className={`message-textarea ${isInputFocused ? 'focused' : ''}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
+                      e.stopPropagation();
                       sendMessage();
                     }
                   }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="Type your message here and press Enter"
                   disabled={loading}
+                  ref={messageInputRef}
                 />
                 <button
-                  onClick={sendMessage}
+                  type="submit"
                   disabled={loading || !userMessage.trim()}
                   className="send-button"
                 >
                   {loading ? '...' : 'Send'}
                 </button>
-              </div>
+              </form>
             </div>
           } />
 
@@ -1226,8 +1355,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           <Route path="/upload-document" element={<DocumentUpload />} />
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/education/topics" element={<EducationPage />} />
-          <Route path="/net-worth" element={<NetWorthPage />} />
+          <Route path="/net-worth" element={<NetWorthPageWrapper />} />
 
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,7 +2,13 @@ from flask import Blueprint, request, jsonify
 import os
 import logging
 from werkzeug.utils import secure_filename
-from app.utils.error_handlers import handle_api_error
+from app.utils.error_handlers import (
+    handle_api_error, 
+    create_error_response,
+    ValidationError, 
+    NotFoundError, 
+    FileError
+)
 from app.utils.document_processor import extract_text_from_pdf, extract_text_from_txt, extract_data_from_csv, analyze_document_with_ai
 
 # Create blueprint for document routes
@@ -26,24 +32,48 @@ def upload_document():
     try:
         # Check if file is present
         if 'document' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
+            validation_error = ValidationError(
+                "No file provided",
+                field="document"
+            )
+            return create_error_response(validation_error)
         
         file = request.files['document']
         
         # Check if file was selected
         if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
+            validation_error = ValidationError(
+                "No file selected",
+                field="document"
+            )
+            return create_error_response(validation_error)
         
         # Validate file type
         if not allowed_file(file.filename):
-            return jsonify({"error": "File type not allowed. Please upload PDF, TXT, CSV, or Excel files."}), 400
+            validation_error = ValidationError(
+                "File type not allowed. Please upload PDF, TXT, CSV, or Excel files.",
+                field="document",
+                details={"allowed_extensions": list(ALLOWED_EXTENSIONS)}
+            )
+            return create_error_response(validation_error)
         
         # Check file size
         if request.content_length and request.content_length > MAX_CONTENT_LENGTH:
-            return jsonify({"error": "File too large. Maximum size is 16MB."}), 400
+            validation_error = ValidationError(
+                "File too large. Maximum size is 16MB.",
+                field="document",
+                details={"max_size": MAX_CONTENT_LENGTH}
+            )
+            return create_error_response(validation_error)
+        
         # Secure filename and save file
         if file.filename is None:
-            return jsonify({"error": "Invalid file name."}), 400
+            validation_error = ValidationError(
+                "Invalid file name.",
+                field="document"
+            )
+            return create_error_response(validation_error)
+        
         filename = secure_filename(file.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
 
@@ -69,10 +99,19 @@ def upload_document():
             elif file_extension in ["csv", "xls", "xlsx"]:
                 text_content = extract_data_from_csv(file_path)
             else:
-                return jsonify({"error": "Unsupported file type"}), 400
+                validation_error = ValidationError(
+                    "Unsupported file type",
+                    field="document"
+                )
+                return create_error_response(validation_error)
             
             if not text_content or text_content.strip() == "":
-                return jsonify({"error": "Could not extract text from document"}), 400
+                file_error = FileError(
+                    "Could not extract text from document",
+                    operation="text_extraction",
+                    file_path=file_path
+                )
+                return create_error_response(file_error)
             
             # Analyze document with AI
             analysis = analyze_document_with_ai(text_content, file_extension, filename)
@@ -99,7 +138,12 @@ def upload_document():
             if os.path.exists(file_path):
                 os.remove(file_path)
             logging.error(f"Document processing error: {processing_error}")
-            return jsonify({"error": "Failed to process document"}), 500
+            file_error = FileError(
+                "Failed to process document",
+                operation="document_processing",
+                file_path=file_path
+            )
+            return create_error_response(file_error)
             
     except Exception as e:
         return handle_api_error(e, "Failed to upload document")
@@ -138,11 +182,19 @@ def delete_document(filename):
         file_path = os.path.join(UPLOAD_FOLDER, secure_name)
         
         if not os.path.exists(file_path):
-            return jsonify({"error": "Document not found"}), 404
+            not_found_error = NotFoundError(
+                "Document not found",
+                resource_type="document"
+            )
+            return create_error_response(not_found_error)
         
         # Check if file is actually in upload folder (security check)
         if not os.path.abspath(file_path).startswith(os.path.abspath(UPLOAD_FOLDER)):
-            return jsonify({"error": "Invalid file path"}), 400
+            validation_error = ValidationError(
+                "Invalid file path",
+                field="filename"
+            )
+            return create_error_response(validation_error)
         
         os.remove(file_path)
         
@@ -160,11 +212,19 @@ def reanalyze_document(filename):
         file_path = os.path.join(UPLOAD_FOLDER, secure_name)
         
         if not os.path.exists(file_path):
-            return jsonify({"error": "Document not found"}), 404
+            not_found_error = NotFoundError(
+                "Document not found",
+                resource_type="document"
+            )
+            return create_error_response(not_found_error)
         
         # Check if file is actually in upload folder (security check)
         if not os.path.abspath(file_path).startswith(os.path.abspath(UPLOAD_FOLDER)):
-            return jsonify({"error": "Invalid file path"}), 400
+            validation_error = ValidationError(
+                "Invalid file path",
+                field="filename"
+            )
+            return create_error_response(validation_error)
         
         # Extract text based on file type
         file_extension = filename.rsplit(".", 1)[1].lower()
@@ -176,10 +236,19 @@ def reanalyze_document(filename):
         elif file_extension in ["csv", "xls", "xlsx"]:
             text_content = extract_data_from_csv(file_path)
         else:
-            return jsonify({"error": "Unsupported file type"}), 400
+            validation_error = ValidationError(
+                "Unsupported file type",
+                field="document"
+            )
+            return create_error_response(validation_error)
         
         if not text_content or text_content.strip() == "":
-            return jsonify({"error": "Could not extract text from document"}), 400
+            file_error = FileError(
+                "Could not extract text from document",
+                operation="text_extraction",
+                file_path=file_path
+            )
+            return create_error_response(file_error)
         
         # Analyze document with AI
         analysis = analyze_document_with_ai(text_content, file_extension, filename)

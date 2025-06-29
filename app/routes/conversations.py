@@ -1,11 +1,24 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
 import logging
-from app.models import SessionLocal, Conversation, Message
-from app.services.chat import get_chat_response
-from app.utils.error_handlers import handle_api_error, validate_json_data
+from datetime import datetime
+from openai import OpenAI
+import os
 
-# Create blueprint for conversation routes
+from app.models import Conversation, Message
+from app.utils.error_handlers import (
+    handle_api_error, 
+    create_error_response, 
+    APIError, 
+    NotFoundError, 
+    ValidationError,
+    ErrorType, 
+    ErrorSeverity
+)
+from app.utils.database import get_db_session
+from app.services.chat import get_chat_response
+from app.utils import validate_json_data
+
+# Create blueprint
 conversations_bp = Blueprint('conversations', __name__)
 
 @conversations_bp.route("/conversations", methods=["POST"])
@@ -13,55 +26,47 @@ def create_conversation():
     """Create a new conversation"""
     try:
         data = validate_json_data(request)
-        title = data.get("title", "New Chat")
+        title = data.get("title", "New Conversation").strip()
         
-        session = SessionLocal()
-        try:
-            conversation = Conversation(title=title)
+        if not title:
+            validation_error = ValidationError(
+                "Title is required",
+                field="title"
+            )
+            return create_error_response(validation_error)
+        
+        with get_db_session() as session:
+            conversation = Conversation(
+                title=title,
+                created_at=datetime.utcnow(),
+                tags=[]
+            )
             session.add(conversation)
             session.commit()
-            session.refresh(conversation)
             
             return jsonify({
                 "id": conversation.id,
                 "title": conversation.title,
                 "created_at": conversation.created_at.isoformat(),
-                "tags": conversation.tags or []
+                "tags": conversation.tags
             }), 201
-        finally:
-            session.close()
             
     except Exception as e:
         return handle_api_error(e, "Failed to create conversation")
 
 @conversations_bp.route("/conversations", methods=["GET"])
 def get_conversations():
-    """Get all conversations with optional search"""
+    """Get all conversations"""
     try:
-        search_query = request.args.get("q", "").strip()
-        
-        session = SessionLocal()
-        try:
-            query = session.query(Conversation)
-            
-            if search_query:
-                # Search in title and tags
-                query = query.filter(
-                    Conversation.title.ilike(f"%{search_query}%") |
-                    Conversation.tags.any(lambda tag: search_query.lower() in tag.lower())
-                )
-            
-            conversations = query.order_by(Conversation.created_at.desc()).all()
+        with get_db_session() as session:
+            conversations = session.query(Conversation).order_by(Conversation.created_at.desc()).all()
             
             return jsonify([{
                 "id": conv.id,
                 "title": conv.title,
                 "created_at": conv.created_at.isoformat(),
-                "tags": conv.tags or [],
-                "message_count": len(conv.messages)
+                "tags": conv.tags
             } for conv in conversations])
-        finally:
-            session.close()
             
     except Exception as e:
         return handle_api_error(e, "Failed to fetch conversations")
@@ -70,11 +75,14 @@ def get_conversations():
 def get_conversation(conversation_id):
     """Get a specific conversation with its messages"""
     try:
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             messages = session.query(Message).filter_by(conversation_id=conversation_id).order_by(Message.timestamp).all()
             
@@ -82,7 +90,7 @@ def get_conversation(conversation_id):
                 "id": conversation.id,
                 "title": conversation.title,
                 "created_at": conversation.created_at.isoformat(),
-                "tags": conversation.tags or [],
+                "tags": conversation.tags,
                 "messages": [{
                     "id": msg.id,
                     "role": msg.role,
@@ -90,8 +98,6 @@ def get_conversation(conversation_id):
                     "timestamp": msg.timestamp.isoformat()
                 } for msg in messages]
             })
-        finally:
-            session.close()
             
     except Exception as e:
         return handle_api_error(e, "Failed to fetch conversation")
@@ -104,13 +110,20 @@ def send_message(conversation_id):
         message_content = data.get("message", "").strip()
         
         if not message_content:
-            return jsonify({"error": "Message content is required"}), 400
+            validation_error = ValidationError(
+                "Message content is required",
+                field="message"
+            )
+            return create_error_response(validation_error)
         
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             # Get AI response using the service
             try:
@@ -123,10 +136,12 @@ def send_message(conversation_id):
                 
             except Exception as ai_error:
                 logging.error(f"AI response error: {ai_error}")
-                return jsonify({"error": "Failed to get AI response"}), 500
-                
-        finally:
-            session.close()
+                api_error = APIError(
+                    "Failed to get AI response",
+                    error_type=ErrorType.EXTERNAL_SERVICE_ERROR,
+                    severity=ErrorSeverity.MEDIUM
+                )
+                return create_error_response(api_error)
             
     except Exception as e:
         return handle_api_error(e, "Failed to send message")
@@ -139,24 +154,28 @@ def rename_conversation(conversation_id):
         new_title = data.get("title", "").strip()
         
         if not new_title:
-            return jsonify({"error": "Title is required"}), 400
+            validation_error = ValidationError(
+                "Title is required",
+                field="title"
+            )
+            return create_error_response(validation_error)
         
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             conversation.title = new_title
-            session.commit()
             
             return jsonify({
                 "id": conversation.id,
                 "title": conversation.title,
                 "message": "Conversation renamed successfully"
             })
-        finally:
-            session.close()
             
     except Exception as e:
         return handle_api_error(e, "Failed to rename conversation")
@@ -165,11 +184,14 @@ def rename_conversation(conversation_id):
 def auto_rename_conversation(conversation_id):
     """Auto-rename conversation based on content"""
     try:
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             # Get recent messages for context
             recent_messages = session.query(Message).filter_by(
@@ -177,28 +199,29 @@ def auto_rename_conversation(conversation_id):
             ).order_by(Message.timestamp.desc()).limit(5).all()
             
             if not recent_messages:
-                return jsonify({"error": "No messages found"}), 400
+                validation_error = ValidationError(
+                    "No messages found",
+                    field="messages"
+                )
+                return create_error_response(validation_error)
 
             # Create context for AI to generate title
             context = "\n".join([str(msg.content) for msg in reversed(recent_messages)])
             prompt = f"Based on this conversation, generate a short, descriptive title (max 50 characters):\n\n{context}"
             
             try:
-                from openai import OpenAI
-                import os
-                
                 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=20
                 )
-
-                message_content = response.choices[0].message.content if response.choices and response.choices[0].message and response.choices[0].message.content else ""
+                message_content = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
                 new_title = message_content.strip().strip('"').strip("'")
                 if len(new_title) > 50:
-                    new_title = new_title[:47] + "..."
+                    new_title = new_title[:50]
 
+                # Update the conversation title
                 conversation.title = new_title
                 session.commit()
                 
@@ -210,10 +233,12 @@ def auto_rename_conversation(conversation_id):
                 
             except Exception as ai_error:
                 logging.error(f"AI auto-rename error: {ai_error}")
-                return jsonify({"error": "Failed to auto-rename conversation"}), 500
-                
-        finally:
-            session.close()
+                api_error = APIError(
+                    "Failed to auto-rename conversation",
+                    error_type=ErrorType.EXTERNAL_SERVICE_ERROR,
+                    severity=ErrorSeverity.MEDIUM
+                )
+                return create_error_response(api_error)
             
     except Exception as e:
         return handle_api_error(e, "Failed to auto-rename conversation")
@@ -226,44 +251,51 @@ def update_tags(conversation_id):
         tags = data.get("tags", [])
         
         if not isinstance(tags, list):
-            return jsonify({"error": "Tags must be a list"}), 400
+            validation_error = ValidationError(
+                "Tags must be a list",
+                field="tags"
+            )
+            return create_error_response(validation_error)
         
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             conversation.tags = tags
-            session.commit()
             
             return jsonify({
                 "id": conversation.id,
                 "tags": conversation.tags,
                 "message": "Tags updated successfully"
             })
-        finally:
-            session.close()
             
     except Exception as e:
         return handle_api_error(e, "Failed to update tags")
 
 @conversations_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
 def delete_conversation(conversation_id):
-    """Delete a conversation"""
+    """Delete a conversation and all its messages"""
     try:
-        session = SessionLocal()
-        try:
-            conversation = session.query(Conversation).get(conversation_id)
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
             
             session.delete(conversation)
-            session.commit()
             
-            return jsonify({"message": "Conversation deleted successfully"})
-        finally:
-            session.close()
+            return jsonify({
+                "message": "Conversation deleted successfully",
+                "deleted_id": conversation_id
+            })
             
     except Exception as e:
         return handle_api_error(e, "Failed to delete conversation") 

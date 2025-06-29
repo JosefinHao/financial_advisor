@@ -19,12 +19,17 @@
   --transition: 0.18s cubic-bezier(.4,0,.2,1);
 }
 
+html, body, #root {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: var(--background);
   color: var(--text);
-  margin: 0;
-  padding: 0;
   font-size: 15px;
 }
 
@@ -48,6 +53,8 @@ body {
   flex-direction: column;
   transition: box-shadow var(--transition);
   position: relative;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar h2 {
@@ -57,12 +64,14 @@ body {
   text-align: center;
   color: var(--primary-dark);
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .sidebar nav ul {
   list-style: none;
   margin: 0 0 6px 0;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .sidebar nav li {
@@ -124,6 +133,7 @@ body {
   height: 1px;
   background: var(--border);
   margin: 12px 0;
+  flex-shrink: 0;
 }
 
 .sidebar h3 {
@@ -131,6 +141,7 @@ body {
   font-weight: 600;
   margin: 0 0 6px 0;
   color: var(--primary-dark);
+  flex-shrink: 0;
 }
 
 /* Conversation List */
@@ -138,8 +149,9 @@ body {
   list-style: none;
   margin: 0;
   padding: 0 0 10px 0;
-  max-height: calc(100vh - 220px);
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .conversation-item {
@@ -335,6 +347,15 @@ body {
   font-size: 0.98rem;
 }
 
+/* Special styling for chat page to prevent page-level scrolling */
+.main-content:has(.chat-panel) {
+  overflow: hidden;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Calculator, Reminders, Education, and Dashboard page containers */
 .retirement-calculator,
 .mortgage-calculator,
@@ -393,6 +414,12 @@ body {
   .main-content {
     padding: 12px 6px 0 6px;
   }
+  
+  /* Keep chat page full height on mobile */
+  .main-content:has(.chat-panel) {
+    padding: 0;
+  }
+  
   .retirement-calculator,
   .mortgage-calculator,
   .compound-interest-calculator,
@@ -407,6 +434,12 @@ body {
   .main-content {
     padding: 6px 2px 0 2px;
   }
+  
+  /* Keep chat page full height on mobile */
+  .main-content:has(.chat-panel) {
+    padding: 0;
+  }
+  
   .retirement-calculator,
   .mortgage-calculator,
   .compound-interest-calculator,
@@ -424,7 +457,8 @@ body {
   height: 100vh;
   max-height: 100vh;
   min-height: 0;
-  padding-bottom: 18px;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .chat-panel h1 {
@@ -434,7 +468,7 @@ body {
 }
 
 .chat-box {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   overflow-y: auto;
   border: 1px solid #ccc;
@@ -487,10 +521,11 @@ body {
   font-size: 0.85rem;
 }
 
-.tag-input-container,
-.message-input-container {
+.tag-input-container {
   flex-shrink: 0;
   margin-bottom: 8px;
+  z-index: 2;
+  background: #fff;
 }
 
 .message-input-container {
@@ -661,6 +696,17 @@ body {
   max-height: 200px;
   transition: all 0.3s ease;
   font-family: inherit;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.message-textarea.focused {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
 .send-button {

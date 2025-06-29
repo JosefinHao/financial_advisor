@@ -102,9 +102,33 @@
   padding: 6px 8px;
   border: 2px solid #e1e5e9;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem !important;
   transition: all 0.3s ease;
   background: #f8f9fa;
+}
+
+.form-group input[type="number"] {
+  font-size: 0.85rem !important;
+}
+
+.form-group input[type="text"] {
+  font-size: 0.85rem !important;
+}
+
+.form-group input::placeholder {
+  font-size: 0.85rem !important;
+}
+
+.form-group input::-webkit-input-placeholder {
+  font-size: 0.85rem !important;
+}
+
+.form-group input::-moz-placeholder {
+  font-size: 0.85rem !important;
+}
+
+.form-group input:-ms-input-placeholder {
+  font-size: 0.85rem !important;
 }
 
 .form-group input:focus {
@@ -120,14 +144,14 @@
   min-height: 40px;
   max-height: 40px;
   padding: 8px 16px;
-  /* background: #f59e42 !important; */
+  background: linear-gradient(135deg, #f59e42 0%, #f97316 25%, #ea580c 50%, #dc2626 75%, #b91c1c 100%);
   color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(245, 158, 66, 0.08);
   flex-shrink: 0;
   flex-grow: 0;
@@ -137,6 +161,11 @@
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+.calculate-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 25%, #ea580c 50%, #f97316 75%, #f59e42 100%);
+  transform: translateY(-1px);
 }
 
 .error-message {

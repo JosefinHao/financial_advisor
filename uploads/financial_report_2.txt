@@ -1,0 +1,17 @@
+
+        Financial Report 2024
+        
+        Income: $75,000
+        Expenses: $45,000
+        Savings: $30,000
+        
+        Investment Portfolio:
+        - 401(k): $50,000
+        - IRA: $25,000
+        - Brokerage: $15,000
+        
+        Goals:
+        - Save for retirement
+        - Buy a house in 5 years
+        - Emergency fund of $20,000
+        

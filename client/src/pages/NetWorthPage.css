@@ -61,7 +61,7 @@
 /* Input Section */
 .input-section {
   background: white;
-  padding: 16px;
+  padding: 12px;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border: 1px solid #e1e5e9;
@@ -75,32 +75,74 @@
   max-height: calc(100vh - 160px);
 }
 
-.input-section h3 {
-  margin: 0 0 12px 0;
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.input-header h3 {
+  margin: 0;
   color: #2c3e50;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.reset-btn {
+  padding: 6px 12px;
+  background: #f8f9fa;
+  color: #6b7280;
+  border: 1px solid #e1e5e9;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  margin-top: 0;
+}
+
+.reset-btn:hover {
+  background: #e9ecef;
+  color: #374151;
+  border-color: #cbd5e1;
+}
+
+/* More specific override to ensure the button moves up */
+.net-worth-calculator .input-header .reset-btn {
+  margin-top: -6px !important;
+  transform: none;
+}
+
+.input-section h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 /* Form Sections */
 .form-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 
 .form-section h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: #2c3e50;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .form-group {
@@ -110,17 +152,17 @@
 }
 
 .form-group label {
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   font-weight: 600;
   color: #34495e;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .form-group input {
-  padding: 6px 8px;
+  padding: 4px 6px;
   border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem !important;
   transition: all 0.3s ease;
   background: #f8f9fa;
 }
@@ -132,34 +174,32 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Override any global input styles */
+.net-worth-calculator .form-group input,
+.net-worth-calculator .form-group input[type="number"],
+.net-worth-calculator .form-group input[type="text"] {
+  font-size: 0.85rem !important;
+}
+
 /* Calculate Button */
 .calculate-btn {
   width: 100%;
-  height: 40px;
-  min-height: 40px;
-  max-height: 40px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-  flex-shrink: 0;
-  flex-grow: 0;
-  margin-top: auto;
+  margin-bottom: 8px;
 }
 
 .calculate-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .calculate-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
@@ -221,30 +261,31 @@
 
 /* Net Worth Card */
 .net-worth-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  background: #f8f9fa;
+  color: #374151;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
   text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
 }
 
 .net-worth-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
   font-weight: 600;
   opacity: 0.9;
 }
 
 .net-worth-amount {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .net-worth-change {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   opacity: 0.9;
 }
@@ -260,26 +301,51 @@
 .net-worth-breakdown {
   display: flex;
   justify-content: space-around;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 8px;
+  padding-top: 8px;
 }
 
 .breakdown-item {
   text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  min-width: 120px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breakdown-item.assets {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #6ee7b7;
+}
+
+.breakdown-item.liabilities {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border: 1px solid #f87171;
 }
 
 .breakdown-item .label {
   display: block;
-  font-size: 0.8rem;
-  opacity: 0.8;
+  font-size: 0.75rem;
+  font-weight: 600;
   margin-bottom: 4px;
+  color: #065f46;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.breakdown-item.liabilities .label {
+  color: #991b1b;
 }
 
 .breakdown-item .amount {
   display: block;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #064e3b;
+}
+
+.breakdown-item.liabilities .amount {
+  color: #7f1d1d;
 }
 
 /* Assets and Liabilities Grid */
@@ -302,6 +368,77 @@
   color: #2c3e50;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.total-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.total-summary.assets {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+}
+
+.total-summary.liabilities {
+  background: #fecaca;
+  border: 1px solid #f87171;
+}
+
+.total-label {
+  font-size: 0.85rem;
+  color: #065f46;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.total-summary.liabilities .total-label {
+  color: #991b1b;
+}
+
+.total-summary .total-amount {
+  font-size: 1rem;
+  color: #064e3b;
+  font-weight: 700;
+  text-shadow: none !important;
+  -webkit-text-shadow: none !important;
+  filter: none !important;
+  flex-shrink: 0;
+}
+
+.total-summary.liabilities .total-amount {
+  color: #7f1d1d;
+  text-shadow: none !important;
+  -webkit-text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Comprehensive shadow removal for total amounts */
+.total-summary .total-amount,
+.total-summary.assets .total-amount,
+.total-summary.liabilities .total-amount {
+  text-shadow: none !important;
+  -webkit-text-shadow: none !important;
+  -moz-text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  -moz-filter: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  background: transparent !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
 }
 
 .breakdown-list {
@@ -369,12 +506,69 @@
   margin-top: 12px;
 }
 
+.trends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.trend-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-btn {
+  padding: 6px 12px;
+  border: 1px solid #e1e5e9;
+  background: #f8f9fa;
+  color: #6b7280;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: #e9ecef;
+  color: #374151;
+}
+
+.toggle-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
 .chart-container {
   display: flex;
   justify-content: space-between;
   align-items: end;
-  height: 120px;
+  height: 140px;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  min-width: 100%;
+}
+
+.chart-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .chart-bar {
@@ -382,13 +576,16 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
+  min-width: 60px;
+  max-width: 80px;
 }
 
 .bar-label {
   font-size: 0.75rem;
   color: #6b7280;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .bar-container {
@@ -409,11 +606,13 @@
 }
 
 .bar-value {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #374151;
   margin-top: 4px;
   font-weight: 500;
   text-align: center;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Insights Grid */
@@ -492,31 +691,34 @@
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #5b67d8 25%, #4f46e5 50%, #4338ca 75%, #3730a3 100%);
   color: white;
 }
 
 .action-btn.primary:hover {
+  background: linear-gradient(135deg, #3730a3 0%, #4338ca 25%, #4f46e5 50%, #5b67d8 75%, #667eea 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .action-btn.info {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 25%, #1d4ed8 50%, #1e40af 75%, #1e3a8a 100%);
   color: white;
 }
 
 .action-btn.info:hover {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #1d4ed8 50%, #2563eb 75%, #3b82f6 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .action-btn.success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 25%, #047857 50%, #065f46 75%, #064e3b 100%);
   color: white;
 }
 
 .action-btn.success:hover {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 25%, #047857 50%, #059669 75%, #10b981 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -598,4 +800,145 @@
   .bar-value {
     font-size: 0.65rem;
   }
+}
+
+.save-btn {
+  width: 100%;
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffb347 0%, #ffa500 25%, #ff8c42 50%, #ff7f50 75%, #ff69b4 100%);
+  color: white;
+  border: none;
+  margin-bottom: 12px;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff69b4 0%, #ff6347 25%, #ff4500 50%, #ff8c42 75%, #ffa500 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 179, 71, 0.3);
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.save-success {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #a7f3d0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Checkbox Groups */
+.checkbox-group {
+  margin: 12px 0 8px 0;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.checkbox-label span {
+  user-select: none;
+}
+
+/* Conditional Fields */
+.housing-fields,
+.rental-fields,
+.housing-liabilities,
+.rental-liabilities {
+  margin-top: 8px;
+  padding: 8px 0;
+  border-left: 3px solid #667eea;
+  padding-left: 12px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 0 6px 6px 0;
+}
+
+.housing-fields .form-group,
+.rental-fields .form-group,
+.housing-liabilities .form-group,
+.rental-liabilities .form-group {
+  margin-bottom: 6px;
+}
+
+.housing-fields .form-group:last-child,
+.rental-fields .form-group:last-child,
+.housing-liabilities .form-group:last-child,
+.rental-liabilities .form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Multiple Houses Styles */
+.number-of-houses {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #e8f4fd;
+  border: 1px solid #b3d9f2;
+  border-radius: 6px;
+}
+
+.number-of-houses label {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.number-of-houses input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 2px solid #b3d9f2;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: white;
+}
+
+.house-group {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+}
+
+.house-group:last-child {
+  margin-bottom: 0;
+}
+
+.house-title {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #dee2e6;
 } 

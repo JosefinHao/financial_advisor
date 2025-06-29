@@ -3,33 +3,43 @@
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .reminders-header {
   text-align: center;
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: 12px;
+  padding: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  max-width: 900px;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
 }
 
 .reminders-header h2 {
-  margin: 0 0 6px 0;
-  font-size: 1.8rem;
+  margin: 0 0 4px 0 !important;
+  font-size: 1.8rem !important;
   font-weight: 700;
-  text-align: center;
+  color: #fff;
 }
 
 .reminders-header p {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem !important;
   opacity: 0.9;
+}
+
+.reminders-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  width: 100%;
 }
 
 /* Statistics Grid */
@@ -307,7 +317,7 @@
 
 .save-btn {
   padding: 12px 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #5b67d8 25%, #4f46e5 50%, #4338ca 75%, #3730a3 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -319,6 +329,7 @@
 }
 
 .save-btn:hover {
+  background: linear-gradient(135deg, #3730a3 0%, #4338ca 25%, #4f46e5 50%, #5b67d8 75%, #667eea 100%);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
@@ -603,7 +614,7 @@
   }
   
   .reminders-header h2 {
-    font-size: 2rem;
+    font-size: 1.8rem !important;
   }
   
   .stats-grid {
@@ -667,7 +678,7 @@
   }
   
   .reminders-header h2 {
-    font-size: 1.8rem;
+    font-size: 1.8rem !important;
   }
   
   .stat-card {

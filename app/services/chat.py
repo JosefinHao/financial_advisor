@@ -2,15 +2,18 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
-from app.models import SessionLocal, Conversation, Message
-from typing import Optional, List, Tuple
+from app.db import SessionLocal
+from app.models_base import Conversation, Message
+from typing import Optional, List, Tuple, Dict, Any
 
 # Load environment variables
 load_dotenv()
+
+# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Financial Advisor System Prompt
-FINANCIAL_ADVISOR_PROMPT = """You are Alex, a professional and knowledgeable financial advisor with over 15 years of experience. Your role is to provide personalized financial guidance, investment advice, and help users make informed decisions about their money.
+# Base Financial Advisor System Prompt
+BASE_FINANCIAL_ADVISOR_PROMPT = """You are Alex, a professional and knowledgeable financial advisor with over 15 years of experience. Your role is to provide personalized financial guidance, investment advice, and help users make informed decisions about their money.
 
 Key responsibilities:
 - Provide clear, actionable financial advice tailored to the user's situation
@@ -35,11 +38,12 @@ Communication style:
 - Use clear, jargon-free language
 - Provide examples and analogies when explaining concepts
 - Be encouraging and supportive while being realistic about challenges
+- Respond in the same language as the user's message
 """
 
 def get_chat_response(
-    user_message: str, conversation_id: Optional[int] = None, tags: Optional[List[str]] = None
-) -> Tuple[str, int]:
+    user_message: str, conversation_id = None, tags = None
+) -> tuple[str, int]:
     session = SessionLocal()
 
     try:
@@ -51,15 +55,20 @@ def get_chat_response(
             session.add(conversation)
             session.commit()
             session.refresh(conversation)
-            conversation_id = conversation.id
+            conversation_id = getattr(conversation, "id", None)
         else:
-            conversation = session.query(Conversation).get(conversation_id)
+            conversation = session.get(Conversation, conversation_id)
             if not conversation:
                 raise ValueError("Invalid conversation ID")
 
+        # Ensure conversation_id is int and not None
+        if conversation_id is None:
+            raise ValueError("conversation_id is None after creation")
+        conversation_id_int = int(conversation_id)
+
         # Store user message
         user_msg = Message(
-            conversation_id=conversation_id, role="user", content=user_message
+            conversation_id=conversation_id_int, role="user", content=str(user_message)
         )
         session.add(user_msg)
         session.commit()
@@ -67,38 +76,38 @@ def get_chat_response(
         # Get full message history
         history = (
             session.query(Message)
-            .filter_by(conversation_id=conversation_id)
+            .filter_by(conversation_id=conversation_id_int)
             .order_by(Message.timestamp)
             .all()
         )
         
         # Build message payload with system prompt
-        message_payload = [
-            {"role": "system", "content": FINANCIAL_ADVISOR_PROMPT}
+        message_payload: List[Dict[str, str]] = [
+            {"role": "system", "content": BASE_FINANCIAL_ADVISOR_PROMPT}
         ]
         
         # Add conversation history
         for msg in history:
-            message_payload.append({"role": msg.role, "content": str(msg.content)})
+            message_payload.append({"role": str(msg.role), "content": str(msg.content)})
 
         # Get assistant response from OpenAI
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=message_payload,
+            messages=message_payload,  # type: ignore
             max_tokens=1000,
             temperature=0.7
         )
-
-        assistant_msg = response.choices[0].message.content
+        print('DEBUG: client.chat.completions.create response type:', type(response))
+        assistant_msg = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
 
         # Store assistant response
         assistant = Message(
-            conversation_id=conversation_id, role="assistant", content=assistant_msg
+            conversation_id=conversation_id_int, role="assistant", content=assistant_msg
         )
         session.add(assistant)
         session.commit()
 
-        return assistant_msg, conversation_id
+        return str(assistant_msg), conversation_id_int
 
     finally:
         session.close()

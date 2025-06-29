@@ -1,15 +1,26 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import logging
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import text
+from werkzeug.exceptions import BadRequest
 
 # Import blueprints
 from app.routes import conversations_bp, calculators_bp, documents_bp, education_bp, dashboard_bp
 
 # Import utilities
-from app.utils import handle_api_error
+from app.utils.error_handlers import (
+    handle_api_error, 
+    create_error_response, 
+    APIError, 
+    NotFoundError, 
+    ValidationError,
+    ErrorType, 
+    ErrorSeverity
+)
+from app.utils.database import get_db_session
 
 # Load environment variables
 load_dotenv()
@@ -49,11 +60,11 @@ def create_app():
             "issues": []
         }
         
-        # Check database
+        # Check database using new session management
         try:
-            from app.models import SessionLocal
-            session = SessionLocal()
-            session.close()
+            with get_db_session() as session:
+                # Simple query to test database connection
+                session.execute(text("SELECT 1"))
             health_status["services"]["database"] = "connected"
         except Exception as e:
             health_status["services"]["database"] = "error"
@@ -112,21 +123,40 @@ def create_app():
         })
     
     # Error handlers
+    @app.errorhandler(400)
+    def bad_request(error):
+        """Handle bad request errors, including JSON parsing errors"""
+        if isinstance(error, BadRequest):
+            validation_error = ValidationError(
+                "Invalid JSON data",
+                field="json_content"
+            )
+            return create_error_response(validation_error)
+        # Handle other 400 errors
+        validation_error = ValidationError(
+            str(error),
+            field="request"
+        )
+        return create_error_response(validation_error)
+    
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({
-            "error": "Endpoint not found",
-            "message": "The requested endpoint does not exist",
-            "timestamp": datetime.now().isoformat()
-        }), 404
+        not_found_error = NotFoundError(
+            "Endpoint not found",
+            resource_type="endpoint"
+        )
+        return create_error_response(not_found_error)
     
     @app.errorhandler(405)
     def method_not_allowed(error):
-        return jsonify({
-            "error": "Method not allowed",
-            "message": "The HTTP method is not supported for this endpoint",
-            "timestamp": datetime.now().isoformat()
-        }), 405
+        method_error = APIError(
+            "Method not allowed",
+            error_type=ErrorType.VALIDATION_ERROR,
+            status_code=405,
+            severity=ErrorSeverity.LOW,
+            details={"allowed_methods": error.valid_methods if hasattr(error, 'valid_methods') else []}
+        )
+        return create_error_response(method_error)
     
     @app.errorhandler(500)
     def internal_error(error):
@@ -135,6 +165,29 @@ def create_app():
     @app.errorhandler(Exception)
     def handle_unexpected_error(e):
         return handle_api_error(e, "An unexpected error occurred")
+    
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(error):
+        print('DEBUG: handle_bad_request triggered')
+        validation_error = ValidationError(
+            "Invalid JSON data",
+            field="json_content"
+        )
+        return create_error_response(validation_error)
+    
+    @app.before_request
+    def catch_json_parsing_errors():
+        if request.method in ["POST", "PUT", "PATCH"] and request.content_type and "application/json" in request.content_type:
+            try:
+                # Only try to parse if there is data
+                if request.data:
+                    request.get_json()
+            except BadRequest:
+                validation_error = ValidationError(
+                    "Invalid JSON data",
+                    field="json_content"
+                )
+                return create_error_response(validation_error)
     
     return app
 

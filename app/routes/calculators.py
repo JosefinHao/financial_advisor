@@ -1,188 +1,284 @@
 from flask import Blueprint, request, jsonify
 import math
 import logging
-from app.utils.error_handlers import handle_api_error, validate_json_data
+from app.utils.error_handlers import (
+    handle_api_error, 
+    validate_json_data, 
+    validate_required_fields,
+    validate_numeric_range,
+    ValidationError,
+    ExternalServiceError,
+    handle_errors
+)
 
 # Create blueprint for calculator routes
 calculators_bp = Blueprint('calculators', __name__)
 
 @calculators_bp.route("/calculators/retirement", methods=["POST"])
+@handle_errors
 def retirement_calculator():
     """Calculate comprehensive retirement savings projection"""
-    try:
-        data = validate_json_data(request)
+    # Validate JSON data
+    data = validate_json_data(request)
+    
+    # Validate required fields
+    required_fields = ["current_age", "retirement_age", "current_savings", "monthly_contribution", "expected_return"]
+    data = validate_required_fields(data, required_fields)
+    
+    # Extract and validate data with proper error handling
+    current_age = validate_numeric_range(data["current_age"], 18, 100, "current_age")
+    retirement_age = validate_numeric_range(data["retirement_age"], current_age + 1, 100, "retirement_age")
+    current_savings = validate_numeric_range(data["current_savings"], 0, None, "current_savings")
+    monthly_contribution = validate_numeric_range(data["monthly_contribution"], 0, None, "monthly_contribution")
+    expected_return = validate_numeric_range(data["expected_return"], 0, 100, "expected_return") / 100  # Convert percentage to decimal
+    
+    # Optional fields with defaults
+    life_expectancy = validate_numeric_range(data.get("life_expectancy", 85), retirement_age + 1, 120, "life_expectancy")
+    inflation_rate = validate_numeric_range(data.get("inflation_rate", 2.5), 0, 100, "inflation_rate") / 100
+    social_security_income = validate_numeric_range(data.get("social_security_income", 0), 0, None, "social_security_income")
+    pension_income = validate_numeric_range(data.get("pension_income", 0), 0, None, "pension_income")
+    desired_retirement_income = validate_numeric_range(data.get("desired_retirement_income", 0), 0, None, "desired_retirement_income")
+    
+    # Calculate years to retirement
+    years_to_retirement = retirement_age - current_age
+    years_in_retirement = life_expectancy - retirement_age
+    
+    # Calculate monthly return rate
+    monthly_return = (1 + expected_return) ** (1/12) - 1
+    
+    # Calculate future value at retirement
+    future_value = current_savings * (1 + expected_return) ** years_to_retirement
+    future_value += monthly_contribution * ((1 + monthly_return) ** (years_to_retirement * 12) - 1) / monthly_return
+    
+    # Calculate total contributions
+    total_contributions = current_savings + (monthly_contribution * 12 * years_to_retirement)
+    
+    # Calculate interest earned
+    interest_earned = future_value - total_contributions
+    
+    # Calculate inflation-adjusted retirement income
+    inflation_adjusted_income = (social_security_income + pension_income) * (1 - inflation_rate) ** years_to_retirement
+    
+    # Calculate savings gap
+    savings_gap = desired_retirement_income - inflation_adjusted_income - (future_value * 0.04)  # 4% withdrawal rule
+    
+    # Generate yearly projections
+    yearly_projections = []
+    for year in range(1, int(years_to_retirement) + 1):
+        age = current_age + year
+        projected_savings = current_savings * (1 + expected_return) ** year
+        projected_savings += monthly_contribution * ((1 + monthly_return) ** (year * 12) - 1) / monthly_return
         
-        # Validate required fields
-        required_fields = ["current_age", "retirement_age", "current_savings", "monthly_contribution", "expected_return"]
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
+        yearly_projections.append({
+            "year": year,
+            "age": age,
+            "balance": round(projected_savings, 2),
+            "contributions": round(current_savings + (monthly_contribution * 12 * year), 2),
+            "interest": round(projected_savings - (current_savings + (monthly_contribution * 12 * year)), 2)
+        })
+    
+    # Generate withdrawal scenarios
+    withdrawal_scenarios = []
+    withdrawal_methods = [
+        {
+            "rate": 0.03,
+            "method": "Conservative (3% Rule)",
+            "description": "Very safe withdrawal rate, designed to preserve capital for 30+ years"
+        },
+        {
+            "rate": 0.04,
+            "method": "Standard (4% Rule)",
+            "description": "Traditional retirement withdrawal rate, typically sustainable for 30 years"
+        },
+        {
+            "rate": 0.05,
+            "method": "Aggressive (5% Rule)",
+            "description": "Higher withdrawal rate, may require portfolio adjustments in market downturns"
+        }
+    ]
+    
+    for method_info in withdrawal_methods:
+        rate = method_info["rate"]
+        annual_withdrawal = future_value * rate
+        monthly_withdrawal = annual_withdrawal / 12
+        years_sustainable = math.log(annual_withdrawal / (annual_withdrawal - future_value * (expected_return - inflation_rate))) / math.log(1 + expected_return - inflation_rate) if annual_withdrawal > future_value * (expected_return - inflation_rate) else float('inf')
         
-        # Extract and validate data
-        current_age = float(data["current_age"])
-        retirement_age = float(data["retirement_age"])
-        current_savings = float(data["current_savings"])
-        monthly_contribution = float(data["monthly_contribution"])
-        expected_return = float(data["expected_return"]) / 100  # Convert percentage to decimal
-        
-        # Optional fields with defaults
-        life_expectancy = float(data.get("life_expectancy", 85))
-        inflation_rate = float(data.get("inflation_rate", 2.5)) / 100
-        social_security_income = float(data.get("social_security_income", 0))
-        pension_income = float(data.get("pension_income", 0))
-        desired_retirement_income = float(data.get("desired_retirement_income", 0))
-        
-        # Validate input ranges
-        if current_age < 18 or current_age > 100:
-            return jsonify({"error": "Current age must be between 18 and 100"}), 400
-        if retirement_age <= current_age or retirement_age > 100:
-            return jsonify({"error": "Retirement age must be greater than current age and less than 100"}), 400
-        if current_savings < 0:
-            return jsonify({"error": "Current savings cannot be negative"}), 400
-        if monthly_contribution < 0:
-            return jsonify({"error": "Monthly contribution cannot be negative"}), 400
-        if expected_return < 0 or expected_return > 1:
-            return jsonify({"error": "Expected return must be between 0% and 100%"}), 400
-        if life_expectancy < retirement_age or life_expectancy > 120:
-            return jsonify({"error": "Life expectancy must be greater than retirement age and less than 120"}), 400
-        
-        # Calculate years to retirement
-        years_to_retirement = retirement_age - current_age
-        years_in_retirement = life_expectancy - retirement_age
-        
-        # Calculate monthly return rate
-        monthly_return = (1 + expected_return) ** (1/12) - 1
-        
-        # Calculate future value at retirement
-        future_value = current_savings * (1 + expected_return) ** years_to_retirement
-        future_value += monthly_contribution * ((1 + monthly_return) ** (years_to_retirement * 12) - 1) / monthly_return
-        
-        # Calculate total contributions
-        total_contributions = current_savings + (monthly_contribution * 12 * years_to_retirement)
-        
-        # Calculate interest earned
-        interest_earned = future_value - total_contributions
-        
-        # Calculate retirement income needs
-        if desired_retirement_income > 0:
-            # Adjust for inflation
-            inflation_adjusted_income = desired_retirement_income * (1 + inflation_rate) ** years_to_retirement
-            total_retirement_income_needed = inflation_adjusted_income * years_in_retirement
-            additional_income_needed = total_retirement_income_needed - (social_security_income + pension_income) * years_in_retirement
-            savings_gap = additional_income_needed - future_value
-        else:
-            inflation_adjusted_income = 0
-            total_retirement_income_needed = 0
-            additional_income_needed = 0
-            savings_gap = 0
-        
-        # Generate yearly projections
-        yearly_projections = []
-        current_balance = current_savings
-        
-        for year in range(int(years_to_retirement) + 1):
-            yearly_projections.append({
-                "year": year,
-                "age": current_age + year,
-                "balance": round(current_balance, 2),
-                "contributions": round(current_savings + (monthly_contribution * 12 * year), 2),
-                "interest": round(current_balance - (current_savings + (monthly_contribution * 12 * year)), 2)
-            })
-            current_balance = current_balance * (1 + expected_return) + (monthly_contribution * 12)
-        
-        # Calculate retirement withdrawal scenarios
-        withdrawal_scenarios = []
-        if future_value > 0:
-            # 4% rule (traditional)
-            withdrawal_4_percent = future_value * 0.04
-            withdrawal_scenarios.append({
-                "method": "4% Rule (Traditional)",
-                "annual_withdrawal": round(withdrawal_4_percent, 2),
-                "monthly_withdrawal": round(withdrawal_4_percent / 12, 2),
-                "description": "Withdraw 4% annually, adjusted for inflation"
-            })
-            
-            # 3% rule (conservative)
-            withdrawal_3_percent = future_value * 0.03
-            withdrawal_scenarios.append({
-                "method": "3% Rule (Conservative)",
-                "annual_withdrawal": round(withdrawal_3_percent, 2),
-                "monthly_withdrawal": round(withdrawal_3_percent / 12, 2),
-                "description": "Withdraw 3% annually for more conservative approach"
-            })
-            
-            # 5% rule (aggressive)
-            withdrawal_5_percent = future_value * 0.05
-            withdrawal_scenarios.append({
-                "method": "5% Rule (Aggressive)",
-                "annual_withdrawal": round(withdrawal_5_percent, 2),
-                "monthly_withdrawal": round(withdrawal_5_percent / 12, 2),
-                "description": "Withdraw 5% annually, higher risk of depletion"
-            })
-        
-        # Calculate catch-up scenarios
-        catch_up_scenarios = []
-        if savings_gap > 0:
-            # Calculate additional monthly contribution needed
-            additional_monthly = (savings_gap / ((1 + monthly_return) ** (years_to_retirement * 12) - 1)) * monthly_return
-            catch_up_scenarios.append({
-                "scenario": "Additional Monthly Contribution",
-                "amount": round(additional_monthly, 2),
-                "description": f"Additional ${round(additional_monthly, 2)}/month needed to meet retirement goal"
-            })
-            
-            # Calculate working longer
-            if years_to_retirement < 20:  # Only suggest if not too close to retirement
-                extra_years_needed = 2  # Suggest working 2 more years
-                new_future_value = current_savings * (1 + expected_return) ** (years_to_retirement + extra_years_needed)
-                new_future_value += (monthly_contribution + additional_monthly) * ((1 + monthly_return) ** ((years_to_retirement + extra_years_needed) * 12) - 1) / monthly_return
-                catch_up_scenarios.append({
-                    "scenario": "Work Longer",
-                    "amount": extra_years_needed,
-                    "description": f"Work {extra_years_needed} more years to increase savings"
-                })
-        
-        # Generate recommendations
-        recommendations = []
-        if future_value < 1000000:
-            recommendations.append("Consider increasing your monthly contributions to build a larger nest egg")
-        if expected_return > 0.08:
-            recommendations.append("Your expected return is optimistic. Consider a more conservative estimate")
-        if years_to_retirement < 10:
-            recommendations.append("You're close to retirement. Focus on preserving capital and reducing risk")
-        if monthly_contribution < 500:
-            recommendations.append("Consider increasing your monthly contribution to accelerate wealth building")
-        if savings_gap > 0:
-            recommendations.append("You may need to save more or work longer to meet your retirement income goals")
-        
-        return jsonify({
-            "current_age": current_age,
-            "retirement_age": retirement_age,
-            "life_expectancy": life_expectancy,
-            "years_to_retirement": years_to_retirement,
-            "years_in_retirement": years_in_retirement,
-            "current_savings": current_savings,
-            "monthly_contribution": monthly_contribution,
-            "expected_return": expected_return * 100,
-            "inflation_rate": inflation_rate * 100,
-            "projected_savings": round(future_value, 2),
-            "total_contributions": round(total_contributions, 2),
-            "interest_earned": round(interest_earned, 2),
-            "social_security_income": social_security_income,
-            "pension_income": pension_income,
-            "desired_retirement_income": desired_retirement_income,
-            "inflation_adjusted_income": round(inflation_adjusted_income, 2),
-            "savings_gap": round(savings_gap, 2),
-            "yearly_projections": yearly_projections,
-            "withdrawal_scenarios": withdrawal_scenarios,
-            "catch_up_scenarios": catch_up_scenarios,
-            "recommendations": recommendations
+        withdrawal_scenarios.append({
+            "method": method_info["method"],
+            "withdrawal_rate": rate * 100,
+            "annual_withdrawal": round(annual_withdrawal, 2),
+            "monthly_withdrawal": round(monthly_withdrawal, 2),
+            "years_sustainable": round(years_sustainable, 1) if years_sustainable != float('inf') else "Indefinite",
+            "description": method_info["description"]
+        })
+    
+    # Generate catch-up scenarios
+    catch_up_scenarios = []
+    if savings_gap > 0:
+        # Calculate additional monthly savings needed
+        additional_monthly_savings = savings_gap / ((1 + monthly_return) ** (years_to_retirement * 12) - 1) * monthly_return
+        catch_up_scenarios.append({
+            "scenario": "Increase Monthly Savings",
+            "description": f"Save an additional ${additional_monthly_savings:,.0f} per month to close the gap",
+            "additional_monthly_savings": round(additional_monthly_savings, 2),
+            "new_total_monthly_savings": round(monthly_contribution + additional_monthly_savings, 2)
         })
         
-    except ValueError as e:
-        return jsonify({"error": f"Invalid numeric value: {str(e)}"}), 400
-    except Exception as e:
-        return handle_api_error(e, "Failed to calculate retirement projection")
+        # Calculate required return rate
+        required_return = ((desired_retirement_income / 0.04 + inflation_adjusted_income) / (current_savings + monthly_contribution * 12 * years_to_retirement)) ** (1 / years_to_retirement) - 1
+        catch_up_scenarios.append({
+            "scenario": "Increase Investment Returns",
+            "description": f"Need {required_return * 100:.1f}% annual return vs current {expected_return * 100:.1f}%",
+            "required_return_rate": round(required_return * 100, 2),
+            "current_return_rate": round(expected_return * 100, 2)
+        })
+        
+        # Calculate working longer
+        additional_years_needed = math.log((desired_retirement_income / 0.04) / future_value) / math.log(1 + expected_return)
+        if additional_years_needed > 0:
+            catch_up_scenarios.append({
+                "scenario": "Work Longer",
+                "description": f"Work {additional_years_needed:.1f} additional years to reach your goal",
+                "additional_years": round(additional_years_needed, 1),
+                "new_retirement_age": round(retirement_age + additional_years_needed, 1)
+            })
+        
+        # Calculate reducing retirement income goal
+        achievable_income = inflation_adjusted_income + (future_value * 0.04)
+        catch_up_scenarios.append({
+            "scenario": "Adjust Retirement Income Goal",
+            "description": f"Reduce annual retirement income goal to ${achievable_income:,.0f}",
+            "achievable_income": round(achievable_income, 2),
+            "current_goal": desired_retirement_income
+        })
+    
+    # Generate recommendations
+    recommendations = []
+    
+    # Savings amount recommendations
+    if future_value > 1000000:
+        recommendations.append("🎉 Excellent! You're on track for a comfortable retirement")
+    elif future_value > 500000:
+        recommendations.append("👍 Good progress! Consider increasing your savings rate for more security")
+    else:
+        recommendations.append("⚠️ Consider increasing your monthly contributions or extending your working years")
+    
+    # Investment return recommendations
+    if expected_return < 0.05:
+        recommendations.append("📈 Consider diversifying your investments for potentially higher returns")
+    elif expected_return > 0.10:
+        recommendations.append("⚠️ Your expected return may be optimistic - consider more conservative planning")
+    
+    # Contribution recommendations
+    if monthly_contribution < 500:
+        recommendations.append("💰 Try to increase your monthly savings if possible - even small increases help")
+    elif monthly_contribution > 2000:
+        recommendations.append("💪 Great savings discipline! You're building a strong retirement foundation")
+    
+    # Gap analysis recommendations
+    if savings_gap > 0:
+        recommendations.append("📊 You may need to save more or work longer to meet your retirement income goals")
+        if savings_gap > 100000:
+            recommendations.append("🚨 Significant gap detected - consider consulting a financial advisor")
+    else:
+        recommendations.append("✅ Your projected savings should meet your retirement income needs")
+    
+    # Age-based recommendations
+    if years_to_retirement < 10:
+        recommendations.append("⏰ You're close to retirement - focus on capital preservation and reducing risk")
+    elif years_to_retirement > 30:
+        recommendations.append("⏳ You have time on your side - consider more aggressive investment strategies")
+    
+    # Social Security and pension recommendations
+    if social_security_income == 0:
+        recommendations.append("🏛️ Consider your Social Security benefits in your retirement planning")
+    if pension_income == 0:
+        recommendations.append("🏢 If available, employer pensions can significantly boost retirement income")
+    
+    # Inflation considerations
+    if inflation_rate > 0.03:
+        recommendations.append("📈 Higher inflation expected - ensure your investments can outpace inflation")
+    
+    # Calculate retirement readiness score (0-100)
+    readiness_score = 0
+    
+    # Base score from savings adequacy (40 points max)
+    savings_adequacy = min(future_value / (desired_retirement_income / 0.04), 1.0)
+    readiness_score += savings_adequacy * 40
+    
+    # Time factor (20 points max)
+    if years_to_retirement >= 20:
+        readiness_score += 20
+    elif years_to_retirement >= 10:
+        readiness_score += 15
+    elif years_to_retirement >= 5:
+        readiness_score += 10
+    else:
+        readiness_score += 5
+    
+    # Savings rate factor (20 points max)
+    savings_rate = (monthly_contribution * 12) / (desired_retirement_income)
+    if savings_rate >= 0.15:
+        readiness_score += 20
+    elif savings_rate >= 0.10:
+        readiness_score += 15
+    elif savings_rate >= 0.05:
+        readiness_score += 10
+    else:
+        readiness_score += 5
+    
+    # Investment return factor (20 points max)
+    if expected_return >= 0.07:
+        readiness_score += 20
+    elif expected_return >= 0.05:
+        readiness_score += 15
+    elif expected_return >= 0.03:
+        readiness_score += 10
+    else:
+        readiness_score += 5
+    
+    readiness_score = min(round(readiness_score), 100)
+    
+    # Determine readiness level
+    if readiness_score >= 80:
+        readiness_level = "Excellent"
+        readiness_description = "You're well-prepared for retirement"
+    elif readiness_score >= 60:
+        readiness_level = "Good"
+        readiness_description = "You're on track but could improve"
+    elif readiness_score >= 40:
+        readiness_level = "Fair"
+        readiness_description = "You need to make some adjustments"
+    else:
+        readiness_level = "Needs Attention"
+        readiness_description = "Significant changes needed to reach your goals"
+    
+    return jsonify({
+        "current_age": current_age,
+        "retirement_age": retirement_age,
+        "life_expectancy": life_expectancy,
+        "years_to_retirement": years_to_retirement,
+        "years_in_retirement": years_in_retirement,
+        "current_savings": current_savings,
+        "monthly_contribution": monthly_contribution,
+        "expected_return": expected_return * 100,
+        "inflation_rate": inflation_rate * 100,
+        "projected_savings": round(future_value, 2),
+        "total_contributions": round(total_contributions, 2),
+        "interest_earned": round(interest_earned, 2),
+        "social_security_income": social_security_income,
+        "pension_income": pension_income,
+        "desired_retirement_income": desired_retirement_income,
+        "inflation_adjusted_income": round(inflation_adjusted_income, 2),
+        "savings_gap": round(savings_gap, 2),
+        "yearly_projections": yearly_projections,
+        "withdrawal_scenarios": withdrawal_scenarios,
+        "catch_up_scenarios": catch_up_scenarios,
+        "recommendations": recommendations,
+        "readiness_score": readiness_score,
+        "readiness_level": readiness_level,
+        "readiness_description": readiness_description
+    })
 
 @calculators_bp.route("/calculators/mortgage", methods=["POST"])
 def mortgage_calculator():

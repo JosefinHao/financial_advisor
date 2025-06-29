@@ -1,4 +1,4 @@
-import PyPDF2
+import pypdf
 import pandas as pd
 import logging
 import os
@@ -12,7 +12,7 @@ def extract_text_from_pdf(file_path):
     """Extract text from PDF file"""
     try:
         with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_reader = pypdf.PdfReader(file)
             text = ""
             
             for page in pdf_reader.pages:
@@ -40,7 +40,7 @@ def extract_text_from_txt(file_path):
         logging.error(f"Error extracting text from TXT {file_path}: {e}")
         raise
 
-def extract_data_from_csv(file_path):
+def extract_data_from_spreadsheet(file_path):
     """Extract and format data from CSV/Excel file"""
     try:
         file_extension = file_path.rsplit(".", 1)[1].lower()
@@ -56,7 +56,13 @@ def extract_data_from_csv(file_path):
             else:
                 raise ValueError("Could not decode CSV file with any supported encoding")
         elif file_extension in ["xls", "xlsx"]:
-            df = pd.read_excel(file_path)
+            try:
+                df = pd.read_excel(file_path)
+            except ImportError as e:
+                if "openpyxl" in str(e):
+                    raise ImportError("openpyxl is required for Excel file processing. Install with: pip install openpyxl")
+                else:
+                    raise
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
         
@@ -83,6 +89,11 @@ def extract_data_from_csv(file_path):
     except Exception as e:
         logging.error(f"Error extracting data from file {file_path}: {e}")
         raise
+
+# Keep the old function name for backward compatibility
+def extract_data_from_csv(file_path):
+    """Alias for extract_data_from_spreadsheet for backward compatibility"""
+    return extract_data_from_spreadsheet(file_path)
 
 def analyze_document_with_ai(text_content, file_type, filename):
     """Analyze document content using OpenAI"""

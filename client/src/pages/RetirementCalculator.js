@@ -5,8 +5,8 @@ import DualColorPicker from '../ui/DualColorPicker';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
-  const [customColor, setCustomColor] = useState('#4f8cff');
-  const [customColor2, setCustomColor2] = useState('#7f53ac');
+  const [customColor, setCustomColor] = useState('#0f4c75');
+  const [customColor2, setCustomColor2] = useState('#4a5568');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('retirementColor');
@@ -104,8 +104,8 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
           onColor2Change={handleColor2Change}
           storageKey1="retirementColor"
           storageKey2="retirementColor2"
-          defaultColor1="#4f8cff"
-          defaultColor2="#7f53ac"
+          defaultColor1="#0f4c75"
+          defaultColor2="#4a5568"
         />
       </div>
 
@@ -292,6 +292,21 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
               </div>
             </div>
 
+            {/* Retirement Readiness Score */}
+            <div className="readiness-score">
+              <h4>Retirement Readiness Score</h4>
+              <div className="score-display">
+                <div className="score-circle">
+                  <span className="score-number">{results.readiness_score}</span>
+                  <span className="score-label">/100</span>
+                </div>
+                <div className="score-info">
+                  <h5>{results.readiness_level}</h5>
+                  <p>{results.readiness_description}</p>
+                </div>
+              </div>
+            </div>
+
             {/* Savings Gap Analysis */}
             {results.savings_gap > 0 && (
               <div className="gap-analysis">
@@ -301,13 +316,39 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
                 {results.catch_up_scenarios.length > 0 && (
                   <div className="catch-up-options">
                     <h5>Catch-up Options:</h5>
-                    <ul>
+                    <div className="catch-up-grid">
                       {results.catch_up_scenarios.map((scenario, index) => (
-                        <li key={index}>
-                          <strong>{scenario.scenario}:</strong> {scenario.description}
-                        </li>
+                        <div key={index} className="catch-up-card">
+                          <h6>{scenario.scenario}</h6>
+                          <p>{scenario.description}</p>
+                          {scenario.additional_monthly_savings && (
+                            <div className="catch-up-detail">
+                              <strong>Additional Monthly Savings:</strong> {formatCurrency(scenario.additional_monthly_savings)}
+                            </div>
+                          )}
+                          {scenario.new_total_monthly_savings && (
+                            <div className="catch-up-detail">
+                              <strong>New Total Monthly Savings:</strong> {formatCurrency(scenario.new_total_monthly_savings)}
+                            </div>
+                          )}
+                          {scenario.required_return_rate && (
+                            <div className="catch-up-detail">
+                              <strong>Required Return Rate:</strong> {scenario.required_return_rate}% (vs current {scenario.current_return_rate}%)
+                            </div>
+                          )}
+                          {scenario.additional_years && (
+                            <div className="catch-up-detail">
+                              <strong>Additional Years:</strong> {scenario.additional_years} years (retire at age {scenario.new_retirement_age})
+                            </div>
+                          )}
+                          {scenario.achievable_income && (
+                            <div className="catch-up-detail">
+                              <strong>Achievable Income:</strong> {formatCurrency(scenario.achievable_income)}/year
+                            </div>
+                          )}
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
