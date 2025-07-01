@@ -2,7 +2,7 @@ import pypdf
 import pandas as pd
 import logging
 import os
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -58,11 +58,8 @@ def extract_data_from_spreadsheet(file_path):
         elif file_extension in ["xls", "xlsx"]:
             try:
                 df = pd.read_excel(file_path)
-            except ImportError as e:
-                if "openpyxl" in str(e):
-                    raise ImportError("openpyxl is required for Excel file processing. Install with: pip install openpyxl")
-                else:
-                    raise
+            except ImportError:
+                raise ImportError("pandas or openpyxl is required to read Excel files")
         else:
             raise ValueError(f"Unsupported file type: {file_extension}")
         
@@ -98,7 +95,7 @@ def extract_data_from_csv(file_path):
 def analyze_document_with_ai(text_content, file_type, filename):
     """Analyze document content using OpenAI"""
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai.api_key = os.getenv("OPENAI_API_KEY")
         
         # Create analysis prompt based on file type
         if file_type == "csv" or file_type in ["xls", "xlsx"]:
@@ -126,7 +123,7 @@ Please provide:
 
 Format your response in a clear, structured manner."""
         
-        response = client.chat.completions.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a financial advisor analyzing documents. Provide clear, actionable insights."},

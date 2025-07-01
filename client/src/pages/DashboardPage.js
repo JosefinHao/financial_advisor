@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
+import MarkdownMessage from '../ui/MarkdownMessage';
 
 const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);

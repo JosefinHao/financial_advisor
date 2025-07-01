@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './CompoundInterestCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
+import MarkdownMessage from '../ui/MarkdownMessage';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
@@ -418,7 +419,7 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
                   {results.insights.map((insight, index) => (
                     <div key={index} className={`insight-item ${insight.type}`}>
                       <h5>{insight.title}</h5>
-                      <p>{insight.message}</p>
+                      <MarkdownMessage content={insight.message} />
                     </div>
                   ))}
                 </div>

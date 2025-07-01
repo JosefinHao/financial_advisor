@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response, stream_template
 import logging
 from datetime import datetime
 from openai import OpenAI
 import os
+import json
+import openai
 
 from app.models import Conversation, Message
+from app.db import SessionLocal
 from app.utils.error_handlers import (
     handle_api_error, 
     create_error_response, 
@@ -15,7 +18,7 @@ from app.utils.error_handlers import (
     ErrorSeverity
 )
 from app.utils.database import get_db_session
-from app.services.chat import get_chat_response
+from app.services.chat import get_chat_response, get_chat_response_stream
 from app.utils import validate_json_data
 
 # Create blueprint
@@ -61,12 +64,20 @@ def get_conversations():
         with get_db_session() as session:
             conversations = session.query(Conversation).order_by(Conversation.created_at.desc()).all()
             
-            return jsonify([{
-                "id": conv.id,
-                "title": conv.title,
-                "created_at": conv.created_at.isoformat(),
-                "tags": conv.tags
-            } for conv in conversations])
+            result = []
+            for conv in conversations:
+                # Count messages for this conversation
+                message_count = session.query(Message).filter_by(conversation_id=conv.id).count()
+                
+                result.append({
+                    "id": conv.id,
+                    "title": conv.title,
+                    "created_at": conv.created_at.isoformat(),
+                    "tags": conv.tags,
+                    "message_count": message_count
+                })
+            
+            return jsonify(result)
             
     except Exception as e:
         return handle_api_error(e, "Failed to fetch conversations")
@@ -146,6 +157,61 @@ def send_message(conversation_id):
     except Exception as e:
         return handle_api_error(e, "Failed to send message")
 
+@conversations_bp.route("/conversations/<int:conversation_id>/stream", methods=["POST"])
+def send_message_stream(conversation_id):
+    """Send a message to a conversation with streaming response"""
+    try:
+        data = validate_json_data(request)
+        message_content = data.get("message", "").strip()
+        
+        if not message_content:
+            validation_error = ValidationError(
+                "Message content is required",
+                field="message"
+            )
+            return create_error_response(validation_error)
+        
+        with get_db_session() as session:
+            conversation = session.get(Conversation, conversation_id)
+            if not conversation:
+                not_found_error = NotFoundError(
+                    "Conversation not found",
+                    resource_type="conversation"
+                )
+                return create_error_response(not_found_error)
+        
+        def generate():
+            try:
+                # Stream the AI response
+                for chunk in get_chat_response_stream(message_content, conversation_id):
+                    # Send each chunk as a Server-Sent Event
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                
+                # Send end signal
+                yield f"data: {json.dumps({'end': True, 'conversation_id': conversation_id})}\n\n"
+                
+            except Exception as ai_error:
+                logging.error(f"AI streaming error: {ai_error}")
+                error_data = {
+                    'error': 'Failed to get AI response',
+                    'details': str(ai_error)
+                }
+                yield f"data: {json.dumps(error_data)}\n\n"
+        
+        return Response(
+            generate(),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            }
+        )
+            
+    except Exception as e:
+        return handle_api_error(e, "Failed to send message")
+
 @conversations_bp.route("/conversations/<int:conversation_id>/rename", methods=["POST"])
 def rename_conversation(conversation_id):
     """Rename a conversation"""
@@ -182,7 +248,7 @@ def rename_conversation(conversation_id):
 
 @conversations_bp.route("/conversations/<int:conversation_id>/auto_rename", methods=["POST"])
 def auto_rename_conversation(conversation_id):
-    """Auto-rename conversation based on content"""
+    """Auto-rename conversation based on content using AI"""
     try:
         with get_db_session() as session:
             conversation = session.get(Conversation, conversation_id)
@@ -193,55 +259,75 @@ def auto_rename_conversation(conversation_id):
                 )
                 return create_error_response(not_found_error)
             
-            # Get recent messages for context
-            recent_messages = session.query(Message).filter_by(
+            # Get all messages in the conversation
+            messages = session.query(Message).filter_by(
                 conversation_id=conversation_id
-            ).order_by(Message.timestamp.desc()).limit(5).all()
+            ).order_by(Message.timestamp).all()
             
-            if not recent_messages:
-                validation_error = ValidationError(
-                    "No messages found",
-                    field="messages"
-                )
-                return create_error_response(validation_error)
+            if len(messages) == 0:
+                return jsonify({
+                    "message": "No messages found to rename conversation"
+                })
+            
+            # Create a summary of the conversation for AI to generate a title
+            conversation_summary = ""
+            for msg in messages:
+                role = "User" if str(msg.role) == "user" else "Assistant"
+                conversation_summary += f"{role}: {msg.content}\n"
+            
+            # Use AI to generate a better title
+            title_prompt = f"""Based on this conversation, generate a concise, descriptive title (maximum 60 characters) that captures the main topic or question being discussed. Return only the title, nothing else.
 
-            # Create context for AI to generate title
-            context = "\n".join([str(msg.content) for msg in reversed(recent_messages)])
-            prompt = f"Based on this conversation, generate a short, descriptive title (max 50 characters):\n\n{context}"
+Conversation:
+{conversation_summary}
+
+Title:"""
             
             try:
-                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                response = client.chat.completions.create(
+                # Get AI-generated title
+                title_response = openai.chat.completions.create(
                     model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=20
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant that generates concise, descriptive titles for conversations. Return only the title, no additional text."},
+                        {"role": "user", "content": title_prompt}
+                    ],
+                    max_tokens=20,
+                    temperature=0.5
                 )
-                message_content = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
-                new_title = message_content.strip().strip('"').strip("'")
-                if len(new_title) > 50:
-                    new_title = new_title[:50]
-
-                # Update the conversation title
-                conversation.title = new_title
-                session.commit()
-                
-                return jsonify({
-                    "id": conversation.id,
-                    "title": conversation.title,
-                    "message": "Conversation auto-renamed successfully"
-                })
-                
+                title_content = title_response.choices[0].message.content
+                if title_content:
+                    new_title = title_content.strip().strip('"\'').strip()
+                    if len(new_title) > 60:
+                        new_title = new_title[:57] + "..."
+                    setattr(conversation, 'title', new_title)
+                    session.commit()
+                    return jsonify({
+                        "id": conversation.id,
+                        "title": conversation.title,
+                        "message": "Conversation auto-renamed successfully using AI"
+                    })
+                else:
+                    raise Exception("AI returned empty title")
             except Exception as ai_error:
-                logging.error(f"AI auto-rename error: {ai_error}")
-                api_error = APIError(
-                    "Failed to auto-rename conversation",
-                    error_type=ErrorType.EXTERNAL_SERVICE_ERROR,
-                    severity=ErrorSeverity.MEDIUM
-                )
-                return create_error_response(api_error)
-            
+                # Fallback to original method if AI fails
+                print(f"AI title generation failed, using fallback: {ai_error}")
+                first_user_message = next((m for m in messages if str(m.role) == "user"), None)
+                if first_user_message:
+                    fallback_title = first_user_message.content[:60]
+                    setattr(conversation, 'title', fallback_title)
+                    session.commit()
+                    return jsonify({
+                        "id": conversation.id,
+                        "title": conversation.title,
+                        "message": "Conversation auto-renamed using fallback method"
+                    })
+                else:
+                    return jsonify({
+                        "message": "No user message found to rename conversation"
+                    })
     except Exception as e:
-        return handle_api_error(e, "Failed to auto-rename conversation")
+        api_error = APIError(str(e))
+        return create_error_response(api_error)
 
 @conversations_bp.route("/conversations/<int:conversation_id>/tags", methods=["PATCH"])
 def update_tags(conversation_id):
@@ -266,7 +352,9 @@ def update_tags(conversation_id):
                 )
                 return create_error_response(not_found_error)
             
-            conversation.tags = tags
+            # Use setattr to properly assign to SQLAlchemy column
+            setattr(conversation, 'tags', list(tags))
+            session.commit()
             
             return jsonify({
                 "id": conversation.id,
@@ -279,7 +367,7 @@ def update_tags(conversation_id):
 
 @conversations_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
 def delete_conversation(conversation_id):
-    """Delete a conversation and all its messages"""
+    """Delete a conversation"""
     try:
         with get_db_session() as session:
             conversation = session.get(Conversation, conversation_id)
@@ -290,11 +378,15 @@ def delete_conversation(conversation_id):
                 )
                 return create_error_response(not_found_error)
             
+            # Delete all messages in the conversation first
+            session.query(Message).filter_by(conversation_id=conversation_id).delete()
+            
+            # Delete the conversation
             session.delete(conversation)
+            session.commit()
             
             return jsonify({
-                "message": "Conversation deleted successfully",
-                "deleted_id": conversation_id
+                "message": "Conversation deleted successfully"
             })
             
     except Exception as e:

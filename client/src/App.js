@@ -9,6 +9,8 @@ import RetirementCalculator from './pages/RetirementCalculator';
 import MortgageCalculator from './pages/MortgageCalculator';
 import CompoundInterestCalculator from './pages/CompoundInterestCalculator';
 import GoalsPage from './pages/GoalsPage';
+import 'katex/dist/katex.min.css';
+import MarkdownMessage from './ui/MarkdownMessage';
 
 // Custom hook for managing input focus
 function useInputFocus() {
@@ -217,80 +219,6 @@ function NetWorthPageWrapper() {
   );
 }
 
-function parseMarkdown(text) {
-  if (typeof text !== 'string') return '';
-  // Escape HTML first
-  let html = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  // Handle code blocks (```...```)
-  html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-    const language = lang ? ` class="language-${lang}"` : '';
-    return `<pre><code${language}>${code.trim()}</code></pre>`;
-  });
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Bold
-  html = html.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__([^_]+)__/, '<strong>$1</strong>');
-
-  // Italic
-  html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
-  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-  // Strikethrough
-  html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-  // Headers
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-  // Blockquotes
-  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-
-  // Unordered lists
-  html = html.replace(/^[\s]*[-*+]\s+(.+)$/gm, '<TEMP_UL_ITEM>$1</TEMP_UL_ITEM>');
-  html = html.replace(/(<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>(\n<TEMP_UL_ITEM>.*?<\/TEMP_UL_ITEM>)*)/gs, (match) => {
-    const items = match.replace(/<TEMP_UL_ITEM>/g, '<li>').replace(/<\/TEMP_UL_ITEM>/g, '</li>');
-    return `<ul>${items}</ul>`;
-  });
-
-  // Ordered lists
-  html = html.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<TEMP_OL_ITEM>$2</TEMP_OL_ITEM>');
-  html = html.replace(/(<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>(\n<TEMP_OL_ITEM>.*?<\/TEMP_OL_ITEM>)*)/gs, (match) => {
-    const items = match.replace(/<TEMP_OL_ITEM>/g, '<li>').replace(/<\/TEMP_OL_ITEM>/g, '</li>');
-    return `<ol>${items}</ol>`;
-  });
-
-  // Clean up newlines within lists (remove all newlines inside list structures)
-  html = html.replace(/(<ul>)\n+/g, '$1');
-  html = html.replace(/\n+(<\/ul>)/g, '$1');
-  html = html.replace(/(<ol>)\n+/g, '$1');
-  html = html.replace(/\n+(<\/ol>)/g, '$1');
-  html = html.replace(/(<\/li>)\n+(<li>)/g, '$1$2');
-
-  // Replace multiple consecutive newlines with double newlines (for paragraph separation)
-  html = html.replace(/\n{3,}/g, '\n\n');
-
-  // Convert remaining single newlines to <br/> tags, but preserve double newlines for paragraph breaks
-  html = html.replace(/\n\n/g, '<PARAGRAPH_BREAK>');
-  html = html.replace(/\n/g, '<br/>');
-  html = html.replace(/<PARAGRAPH_BREAK>/g, '<br/><br/>');
-
-  // Clean up any extra <br/> tags around lists
-  html = html.replace(/<br\/?>\s*(<[uo]l>)/g, '$1');
-  html = html.replace(/(<\/[uo]l>)\s*<br\/?>/g, '$1');
-  // Multiple spaces
-  html = html.replace(/ {2,}/g, (spaces) => '&nbsp;'.repeat(spaces.length));
-
-  return html;
-}
-
 function AppContent() {
   const [conversations, setConversations] = useState([]);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
@@ -461,21 +389,109 @@ function AppContent() {
     }, 0);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}`, {
+      // Add an empty assistant message that we'll fill with streaming content
+      setChatHistory(prev => [...prev, { role: 'assistant', content: '' }]);
+      
+      // Use the streaming endpoint
+      const response = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage.trim() }),
       });
-      const data = await res.json();
-      setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply }]);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullResponse = ''; // Track the complete response
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.chunk) {
+                // Check if this chunk contains the normalized content marker
+                if (data.chunk.includes('<!-- NORMALIZED_CONTENT_START -->')) {
+                  // Extract the normalized content
+                  const startMarker = '<!-- NORMALIZED_CONTENT_START -->';
+                  const endMarker = '<!-- NORMALIZED_CONTENT_END -->';
+                  const startIndex = data.chunk.indexOf(startMarker) + startMarker.length;
+                  const endIndex = data.chunk.indexOf(endMarker);
+                  const normalizedContent = data.chunk.substring(startIndex, endIndex).trim();
+                  
+                  // Replace the assistant message with the normalized content
+                  setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    const lastMessage = newHistory[newHistory.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                      lastMessage.content = normalizedContent;
+                    }
+                    return newHistory;
+                  });
+                } else {
+                  // Build the complete response incrementally
+                  fullResponse += data.chunk;
+                  
+                  // Update the assistant message with the complete response so far
+                  setChatHistory(prev => {
+                    const newHistory = [...prev];
+                    const lastMessage = newHistory[newHistory.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                      lastMessage.content = fullResponse;
+                    }
+                    return newHistory;
+                  });
+                }
+                
+                // Auto-scroll as content streams in
+                setTimeout(() => {
+                  setShouldAutoScroll(true);
+                }, 0);
+              }
+              
+              if (data.end) {
+                // Streaming is complete
+                break;
+              }
+              
+              if (data.error) {
+                throw new Error(data.error);
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError);
+            }
+          }
+        }
+      }
       
-      // Always auto-scroll to show the AI response
+      // Always auto-scroll to show the complete AI response
       setTimeout(() => {
         setShouldAutoScroll(true);
       }, 0);
+      
     } catch (err) {
       console.error("Failed to send message:", err);
-      setChatHistory(prev => [...prev, { role: 'assistant', content: 'Error: Failed to get reply.' }]);
+      // Update the last message with error content
+      setChatHistory(prev => {
+        const newHistory = [...prev];
+        const lastMessage = newHistory[newHistory.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant') {
+          lastMessage.content = 'Error: Failed to get reply.';
+        }
+        return newHistory;
+      });
       
       // Always auto-scroll to show the error message
       setTimeout(() => {
@@ -671,7 +687,7 @@ function AppContent() {
   };
 
   const renderMessageContent = (msg) => {
-    const html = parseMarkdown(msg.content);
+    const html = msg.content;
 
     if (!searchQuery) {
       return <div dangerouslySetInnerHTML={{ __html: html }} />;
@@ -1240,7 +1256,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                         {msg.role === 'user' ? 'You:' : 'Advisor:'}
                       </div>
                       <div className="chat-message-content">
-                        {renderMessageContent(msg)}
+                        <MarkdownMessage content={msg.content} />
                       </div>
                     </div>
                   ))

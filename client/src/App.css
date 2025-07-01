@@ -1138,17 +1138,6 @@ mark {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* List styling for markdown-converted content */
-ul, ol {
-    margin: 0.5em 0 0 0; /* top margin only, no bottom margin */
-    padding-left: 1.5em; /* indent for bullets/numbers */
-}
-
-li {
-    margin: 0;
-    padding: 0;
-}
-
 /* Education Page Styles */
 .education-container {
   width: 100%;
@@ -2138,3 +2127,4 @@ li {
     font-size: 1rem;
   }
 }
+
