@@ -18,7 +18,7 @@ from app.utils.error_handlers import (
     ErrorSeverity
 )
 from app.utils.database import get_db_session
-from app.services.chat import get_chat_response, get_chat_response_stream
+from app.services.chat import get_chat_response, get_chat_response_stream, auto_rename_conversation as rename_conversation_func
 from app.utils import validate_json_data
 
 # Create blueprint
@@ -259,75 +259,20 @@ def auto_rename_conversation(conversation_id):
                 )
                 return create_error_response(not_found_error)
             
-            # Get all messages in the conversation
-            messages = session.query(Message).filter_by(
-                conversation_id=conversation_id
-            ).order_by(Message.timestamp).all()
+            # Use the updated auto_rename_conversation function from chat.py
+            rename_conversation_func(session, conversation_id)
             
-            if len(messages) == 0:
-                return jsonify({
-                    "message": "No messages found to rename conversation"
-                })
+            # Refresh the conversation to get the updated title
+            session.refresh(conversation)
             
-            # Create a summary of the conversation for AI to generate a title
-            conversation_summary = ""
-            for msg in messages:
-                role = "User" if str(msg.role) == "user" else "Assistant"
-                conversation_summary += f"{role}: {msg.content}\n"
+            return jsonify({
+                "id": conversation.id,
+                "title": conversation.title,
+                "message": "Conversation auto-renamed successfully"
+            })
             
-            # Use AI to generate a better title
-            title_prompt = f"""Based on this conversation, generate a concise, descriptive title (maximum 60 characters) that captures the main topic or question being discussed. Return only the title, nothing else.
-
-Conversation:
-{conversation_summary}
-
-Title:"""
-            
-            try:
-                # Get AI-generated title
-                title_response = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant that generates concise, descriptive titles for conversations. Return only the title, no additional text."},
-                        {"role": "user", "content": title_prompt}
-                    ],
-                    max_tokens=20,
-                    temperature=0.5
-                )
-                title_content = title_response.choices[0].message.content
-                if title_content:
-                    new_title = title_content.strip().strip('"\'').strip()
-                    if len(new_title) > 60:
-                        new_title = new_title[:57] + "..."
-                    setattr(conversation, 'title', new_title)
-                    session.commit()
-                    return jsonify({
-                        "id": conversation.id,
-                        "title": conversation.title,
-                        "message": "Conversation auto-renamed successfully using AI"
-                    })
-                else:
-                    raise Exception("AI returned empty title")
-            except Exception as ai_error:
-                # Fallback to original method if AI fails
-                print(f"AI title generation failed, using fallback: {ai_error}")
-                first_user_message = next((m for m in messages if str(m.role) == "user"), None)
-                if first_user_message:
-                    fallback_title = first_user_message.content[:60]
-                    setattr(conversation, 'title', fallback_title)
-                    session.commit()
-                    return jsonify({
-                        "id": conversation.id,
-                        "title": conversation.title,
-                        "message": "Conversation auto-renamed using fallback method"
-                    })
-                else:
-                    return jsonify({
-                        "message": "No user message found to rename conversation"
-                    })
     except Exception as e:
-        api_error = APIError(str(e))
-        return create_error_response(api_error)
+        return handle_api_error(e, "Failed to auto-rename conversation")
 
 @conversations_bp.route("/conversations/<int:conversation_id>/tags", methods=["PATCH"])
 def update_tags(conversation_id):

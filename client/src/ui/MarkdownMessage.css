@@ -60,7 +60,7 @@
 
 .ai-math-block {
   text-align: center;
-  margin: 16px 0;
+  margin: 16px 0 8px 0;
   padding: 8px 0;
 }
 
@@ -86,4 +86,43 @@
 
 .markdown-message li + li {
   margin-top: 0;
+}
+
+/* Header styles */
+.ai-header {
+  margin: 20px 0 12px 0;
+  padding: 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #333;
+}
+
+.ai-header-1 {
+  font-size: 1.8em;
+  font-weight: 700;
+}
+
+.ai-header-2 {
+  font-size: 1.5em;
+  font-weight: 700;
+}
+
+.ai-header-3 {
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.ai-header-4 {
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.ai-header-5 {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.ai-header-6 {
+  font-size: 0.9em;
+  font-weight: 600;
 } 

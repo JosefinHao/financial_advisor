@@ -233,7 +233,6 @@ function AppContent() {
   const [isResizing, setIsResizing] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
-  const [isAdvisorTyping, setIsAdvisorTyping] = useState(false);
 
   const chatEndRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -326,11 +325,6 @@ function AppContent() {
       }
     };
   }, [isResizing]);
-
-  // Update isAdvisorTyping based on loading
-  useEffect(() => {
-    setIsAdvisorTyping(loading);
-  }, [loading]);
 
   const refreshConversations = async (preserveSelection = false) => {
     try {
@@ -1270,15 +1264,6 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   ))
                 ) : (
                   <p>No messages yet. Start the conversation!</p>
-                )}
-                {/* Advisor typing indicator */}
-                {isAdvisorTyping && (
-                  <div className="chat-message assistant typing-indicator">
-                    <div className="chat-message-header">Advisor:</div>
-                    <div className="chat-message-content">
-                      <em>Advisor typing...</em>
-                    </div>
-                  </div>
                 )}
                 <div ref={chatEndRef} />
               </div>

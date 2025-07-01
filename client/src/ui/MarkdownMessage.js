@@ -99,6 +99,70 @@ const MarkdownMessage = ({ content }) => {
       // Process math in the line, then trim again
       let processedLine = renderMath(trimmedLine).trim();
       
+      // Debug: Check if this line contains only a math formula
+      const hasBlockMath = processedLine.includes('<BLOCK_MATH>');
+      console.log(`Line ${index}: "${trimmedLine}" -> "${processedLine}" (hasBlockMath: ${hasBlockMath})`);
+      
+      // Markdown headers: ###, ##, #
+      const headerMatch = processedLine.match(/^(#{1,6})\s+(.+)$/);
+      if (headerMatch) {
+        // Close any open list
+        if (currentList.length > 0) {
+          elements.push(
+            listType === 'ol' ? (
+              <ol key={`ol-${index}`} className="ai-list">{currentList}</ol>
+            ) : (
+              <ul key={`ul-${index}`} className="ai-list">{currentList}</ul>
+            )
+          );
+          currentList = [];
+          listType = null;
+        }
+        
+        const headerLevel = headerMatch[1].length;
+        const headerText = headerMatch[2];
+        
+        // Render different header levels
+        if (headerLevel === 1) {
+          elements.push(
+            <h1 key={index} className="ai-header ai-header-1">
+              {renderTextWithMathAndBold(headerText)}
+            </h1>
+          );
+        } else if (headerLevel === 2) {
+          elements.push(
+            <h2 key={index} className="ai-header ai-header-2">
+              {renderTextWithMathAndBold(headerText)}
+            </h2>
+          );
+        } else if (headerLevel === 3) {
+          elements.push(
+            <h3 key={index} className="ai-header ai-header-3">
+              {renderTextWithMathAndBold(headerText)}
+            </h3>
+          );
+        } else if (headerLevel === 4) {
+          elements.push(
+            <h4 key={index} className="ai-header ai-header-4">
+              {renderTextWithMathAndBold(headerText)}
+            </h4>
+          );
+        } else if (headerLevel === 5) {
+          elements.push(
+            <h5 key={index} className="ai-header ai-header-5">
+              {renderTextWithMathAndBold(headerText)}
+            </h5>
+          );
+        } else {
+          elements.push(
+            <h6 key={index} className="ai-header ai-header-6">
+              {renderTextWithMathAndBold(headerText)}
+            </h6>
+          );
+        }
+        return;
+      }
+      
       // Section header: 1. **Title:** or 2. **Title:**
       const sectionHeaderMatch = processedLine.match(/^\d+\.\s+\*\*(.+?)\*\*:?$/);
       if (sectionHeaderMatch) {
@@ -186,6 +250,19 @@ const MarkdownMessage = ({ content }) => {
           <p key={index} className="ai-paragraph">
             <strong>{renderTextWithMathAndBold(boldMatch[1])}</strong>
           </p>
+        );
+        return;
+      }
+      
+      // Check if this line contains only a block math formula
+      const onlyBlockMath = processedLine.match(/^<BLOCK_MATH>.*<\/BLOCK_MATH>$/);
+      if (onlyBlockMath) {
+        // Render as a math block only
+        const formula = processedLine.replace('<BLOCK_MATH>', '').replace('</BLOCK_MATH>', '');
+        elements.push(
+          <div key={index} className="ai-math-block">
+            <BlockMath math={formula} />
+          </div>
         );
         return;
       }

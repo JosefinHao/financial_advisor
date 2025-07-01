@@ -36,12 +36,20 @@ def clean_ai_response(text: str) -> str:
                        re.match(r'^[-*+]\s', line) or
                        line.startswith('**') and '**' in line[2:])
         
-        print(f"LINE {i}: {repr(line)} - IS_LIST_ITEM: {is_list_item}")  # DEBUG
+        # Check if this line should start a new paragraph (like "Where:", "Note:", etc.)
+        starts_new_paragraph = (line.lower().startswith(('where:', 'note:', 'therefore:', 'thus:', 'hence:', 'so:', 'then:')) or
+                               line.startswith('**') and line.endswith('**'))
+        
+        print(f"LINE {i}: {repr(line)} - IS_LIST_ITEM: {is_list_item} - STARTS_NEW_PARAGRAPH: {starts_new_paragraph}")  # DEBUG
         
         if is_list_item:
             # For list items, keep the line as-is
             cleaned_lines.append(line)
             print(f"ADDED AS LIST ITEM: {line}")  # DEBUG
+        elif starts_new_paragraph:
+            # For text that should start a new paragraph, don't append to previous line
+            cleaned_lines.append(line)
+            print(f"STARTED NEW PARAGRAPH: {line}")  # DEBUG
         else:
             # For regular text, add a space if it's not the first line and previous line wasn't a list item
             if cleaned_lines and not re.match(r'^\d+\.', cleaned_lines[-1]) and not re.match(r'^[-*+]\s', cleaned_lines[-1]):
@@ -138,12 +146,12 @@ def auto_rename_conversation(session, conversation_id: int) -> None:
             conversation_summary += f"{role}: {msg.content}\n"
         
         # Use AI to generate a better title
-        title_prompt = f"""Based on this conversation, generate a concise, descriptive title (maximum 60 characters) that captures the main topic or question being discussed. Return only the title, nothing else.
+        title_prompt = f"""Based on this conversation, generate a concise, descriptive title that is exactly 6 words or less. The title should capture the main topic or question being discussed. Return only the title, nothing else.
 
 Conversation:
 {conversation_summary}
 
-Title:"""
+Title (6 words or less):"""
         
         try:
             # Get AI-generated title
@@ -165,7 +173,13 @@ Title:"""
                 new_title = new_title.strip('"\'')
                 new_title = new_title.strip()
                 
-                # Ensure it's not too long
+                # Limit to at most 6 words
+                words = new_title.split()
+                if len(words) > 6:
+                    # Take words until we reach 6, then stop
+                    new_title = ' '.join(words[:6])
+                
+                # Also ensure it's not too long (character limit as backup)
                 if len(new_title) > 60:
                     new_title = new_title[:57] + "..."
                 
@@ -186,9 +200,14 @@ Title:"""
             
             if first_user_message:
                 message_content = str(first_user_message.content)
-                new_title = message_content[:50]
-                if len(message_content) > 50:
-                    new_title += "..."
+                # Limit fallback title to 6 words as well
+                words = message_content.split()
+                if len(words) > 6:
+                    new_title = ' '.join(words[:6])
+                else:
+                    new_title = message_content[:50]  # Character limit as backup
+                    if len(message_content) > 50:
+                        new_title += "..."
                 
                 conversation.title = new_title
                 session.commit()
