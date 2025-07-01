@@ -77,7 +77,8 @@ const MarkdownMessage = ({ content }) => {
         const formula = part.replace('<INLINE_MATH>', '').replace('</INLINE_MATH>', '');
         return <InlineMath key={index} math={formula} />;
       } else {
-        return renderBold(part.trim());
+        // Don't trim non-math segments to preserve spacing around inline math
+        return renderBold(part);
       }
     });
   };

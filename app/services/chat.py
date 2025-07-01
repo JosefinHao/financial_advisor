@@ -364,29 +364,29 @@ def get_chat_response_stream(
         )
         
         full_response = ""
-        buffer = ""
-        in_math_block = False
-        math_block_start = 0
         
-        # Stream the response chunks
+        # Stream the response chunks in real-time
         for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 content_chunk = chunk.choices[0].delta.content
-                print("RAW AI CHUNK:", repr(content_chunk))  # DEBUG: print raw AI output chunk
+                # print("RAW AI CHUNK:", repr(content_chunk))  # DEBUG: print raw AI output chunk
                 full_response += content_chunk
-                buffer += content_chunk
-                # REMOVE: any post-processing or yielding, just accumulate full_response
-        # After streaming, store the complete assistant response as raw
-        print("BEFORE CLEANING (streaming):", repr(full_response))  # DEBUG
-        full_response = clean_ai_response(full_response)  # Clean up excessive newlines
-        print("AFTER CLEANING (streaming):", repr(full_response))  # DEBUG
+                # Yield each chunk immediately for real-time streaming
+                yield content_chunk
+        
+        # After streaming is complete, clean and store the full response
+        # print("BEFORE CLEANING (streaming):", repr(full_response))  # DEBUG
+        cleaned_response = clean_ai_response(full_response)  # Clean up excessive newlines
+        # print("AFTER CLEANING (streaming):", repr(cleaned_response))  # DEBUG
+        
+        # Store the cleaned response in the database
         assistant = Message(
-            conversation_id=conversation_id_int, role="assistant", content=full_response
+            conversation_id=conversation_id_int, role="assistant", content=cleaned_response
         )
         session.add(assistant)
         session.commit()
-        # Yield the full response as a single chunk for streaming compatibility
-        yield full_response
+        
+        # Return the conversation_id as an integer
         return conversation_id_int
 
     finally:
@@ -449,12 +449,11 @@ def get_chat_response(
             temperature=0.7
         )
         assistant_msg = response.choices[0].message.content if response.choices and response.choices[0].message.content else ""
-        print("RAW AI FULL MESSAGE:", repr(assistant_msg))  # DEBUG: print raw AI output
-        print("BEFORE CLEANING (non-streaming):", repr(assistant_msg))  # DEBUG
+        # print("RAW AI FULL MESSAGE:", repr(assistant_msg))  # DEBUG: print raw AI output
+        # print("BEFORE CLEANING (non-streaming):", repr(assistant_msg))  # DEBUG
         # Clean up excessive newlines before storing and returning
         assistant_msg = clean_ai_response(assistant_msg)
-        print("AFTER CLEANING (non-streaming):", repr(assistant_msg))  # DEBUG
-        # REMOVE: any post-processing, just store and return the raw message
+        # print("AFTER CLEANING (non-streaming):", repr(assistant_msg))  # DEBUG
         assistant = Message(
             conversation_id=conversation_id_int, role="assistant", content=assistant_msg
         )
