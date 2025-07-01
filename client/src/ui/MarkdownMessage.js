@@ -53,13 +53,32 @@ const MarkdownMessage = ({ content }) => {
   // Helper to render bold text
   const renderBold = (text) => {
     // Replace **bold** with <strong>bold</strong>
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
-    return parts.map((part, i) => {
+    let parts = text.split(/(\*\*[^*]+\*\*)/g);
+    parts = parts.map((part, i) => {
       if (/^\*\*[^*]+\*\*$/.test(part)) {
-        return <strong key={i}>{part.slice(2, -2)}</strong>;
+        return <strong key={`double-${i}`}>{part.slice(2, -2)}</strong>;
       }
       return part;
     });
+    
+    // Replace *bold* with <strong>bold</strong> (single asterisks)
+    const finalParts = [];
+    parts.forEach((part, i) => {
+      if (typeof part === 'string') {
+        const singleBoldParts = part.split(/(\*[^*]+\*)/g);
+        singleBoldParts.forEach((singlePart, j) => {
+          if (/^\*[^*]+\*$/.test(singlePart)) {
+            finalParts.push(<strong key={`single-${i}-${j}`}>{singlePart.slice(1, -1)}</strong>);
+          } else {
+            finalParts.push(singlePart);
+          }
+        });
+      } else {
+        finalParts.push(part);
+      }
+    });
+    
+    return finalParts;
   };
   
   // Helper to render text with math and bold
@@ -103,9 +122,11 @@ const MarkdownMessage = ({ content }) => {
       const hasBlockMath = processedLine.includes('<BLOCK_MATH>');
       console.log(`Line ${index}: "${trimmedLine}" -> "${processedLine}" (hasBlockMath: ${hasBlockMath})`);
       
-      // Markdown headers: ###, ##, #
+      // Markdown headers: ###, ##, # (check this BEFORE numbered lists)
       const headerMatch = processedLine.match(/^(#{1,6})\s+(.+)$/);
+      console.log(`Header match for "${processedLine}":`, headerMatch);
       if (headerMatch) {
+        console.log(`Rendering header: level ${headerMatch[1].length}, text: "${headerMatch[2]}"`);
         // Close any open list
         if (currentList.length > 0) {
           elements.push(
@@ -120,7 +141,7 @@ const MarkdownMessage = ({ content }) => {
         }
         
         const headerLevel = headerMatch[1].length;
-        const headerText = headerMatch[2];
+        const headerText = headerMatch[2].trim(); // Ensure no extra whitespace
         
         // Render different header levels
         if (headerLevel === 1) {

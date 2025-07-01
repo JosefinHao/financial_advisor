@@ -239,6 +239,7 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { inputRef: messageInputRef, focusInput, focusInputDelayed } = useInputFocus();
+  const shouldStopResponseRef = useRef(false);
 
   useEffect(() => {
     refreshConversations();
@@ -376,8 +377,16 @@ function AppContent() {
     }
   };
 
+  const stopResponse = () => {
+    shouldStopResponseRef.current = true;
+  };
+
   const sendMessage = async () => {
     if (!userMessage.trim() || !selectedConversationId) return;
+    
+    // Reset stop flag at the start of a new message
+    shouldStopResponseRef.current = false;
+    
     const newMsg = { role: 'user', content: userMessage.trim() };
     setChatHistory(prev => [...prev, newMsg]);
     setUserMessage('');
@@ -409,6 +418,13 @@ function AppContent() {
       let fullResponse = ''; // Track the complete response
 
       while (true) {
+        // Check if user wants to stop the response
+        if (shouldStopResponseRef.current) {
+          console.log('User stopped the response');
+          reader.cancel(); // Cancel the stream
+          break;
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -499,6 +515,7 @@ function AppContent() {
       }, 0);
     } finally {
       setLoading(false);
+      shouldStopResponseRef.current = false; // Reset stop flag
       // Only focus input after sending a message
       focusInputDelayed(100);
     }
@@ -1354,13 +1371,25 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
                   disabled={loading}
                   ref={messageInputRef}
                 />
-                <button
-                  type="submit"
-                  disabled={loading || !userMessage.trim()}
-                  className="send-button"
-                >
-                  {loading ? '...' : 'Send'}
-                </button>
+                <div className="button-container">
+                  {loading && (
+                    <button
+                      type="button"
+                      onClick={stopResponse}
+                      className="stop-button"
+                      title="Stop response"
+                    >
+                      Stop
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading || !userMessage.trim()}
+                    className="send-button"
+                  >
+                    {loading ? '...' : 'Send'}
+                  </button>
+                </div>
               </form>
             </div>
           } />
