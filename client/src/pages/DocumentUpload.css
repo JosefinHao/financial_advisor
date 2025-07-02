@@ -2,16 +2,38 @@
 
 /* Container and Layout */
 .document-upload-container {
-    max-width: 100%;
-    height: 100vh;
+    max-width: none;
     margin: 0;
-    padding: 12px;
+    padding: 16px;
     background-color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto !important;
+    height: 100vh;
+    min-height: 100vh;
 }
+
+/* Custom Scrollbar Styling */
+.document-upload-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.document-upload-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.document-upload-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.document-upload-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+
 
 /* Header Styles */
 .header {
@@ -30,7 +52,8 @@
 .subtitle {
     color: #6b7280;
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    text-align: center;
 }
 
 /* Main Content Area */
@@ -40,10 +63,10 @@
     background-color: #f9fafb;
     border-radius: 6px;
     padding: 12px;
-    flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    border: none;
 }
 
 .upload-section {
@@ -53,14 +76,45 @@
 
 .history-section {
     flex: 1;
-    overflow: hidden;
+    min-height: 300px;
 }
 
 .section-title {
     font-size: 1rem;
     font-weight: 600;
     color: #1f2937;
-    margin: 0 0 8px 0;
+    margin: 0;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+
+.delete-all-button {
+    background: none;
+    border: 1px solid var(--text-light);
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.delete-all-button:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    border-color: #dc2626;
+    opacity: 1;
+    transform: scale(1.05);
 }
 
 /* Drag and Drop Area */
@@ -255,8 +309,6 @@
     background-color: #eff6ff;
     border: 1px solid #bfdbfe;
     border-radius: 4px;
-    max-height: 120px;
-    overflow-y: auto;
 }
 
 .analysis-title {
@@ -269,11 +321,57 @@
 .analysis-content {
     color: #1e40af;
     font-size: 0.8rem;
+    text-align: left;
 }
 
-.analysis-content p {
-    margin: 3px 0;
+.analysis-content .markdown-message {
+    font-size: 0.8rem;
     line-height: 1.4;
+    text-align: left;
+}
+
+.analysis-content .markdown-message h1,
+.analysis-content .markdown-message h2,
+.analysis-content .markdown-message h3,
+.analysis-content .markdown-message h4,
+.analysis-content .markdown-message h5,
+.analysis-content .markdown-message h6 {
+    color: #1e40af;
+    margin: 8px 0 4px 0;
+    font-weight: 600;
+}
+
+.analysis-content .markdown-message h1 {
+    font-size: 1.1rem;
+}
+
+.analysis-content .markdown-message h2 {
+    font-size: 1rem;
+}
+
+.analysis-content .markdown-message h3 {
+    font-size: 0.9rem;
+}
+
+.analysis-content .markdown-message p {
+    margin: 4px 0;
+    line-height: 1.4;
+}
+
+.analysis-content .markdown-message ul,
+.analysis-content .markdown-message ol {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.analysis-content .markdown-message li {
+    margin: 2px 0;
+    line-height: 1.4;
+}
+
+.analysis-content .markdown-message strong {
+    font-weight: 600;
+    color: #1e40af;
 }
 
 /* Document History */
@@ -298,28 +396,9 @@
     display: grid;
     gap: 8px;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    overflow-y: auto;
     flex: 1;
     padding-right: 4px;
-    max-height: calc(100vh - 400px);
-}
-
-.documents-grid::-webkit-scrollbar {
-    width: 6px;
-}
-
-.documents-grid::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.documents-grid::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-}
-
-.documents-grid::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    min-height: 200px;
 }
 
 .document-card {
@@ -358,16 +437,24 @@
 .delete-button {
     background: none;
     border: none;
-    font-size: 0.9rem;
+    color: var(--text-light);
     cursor: pointer;
-    color: #ef4444;
-    padding: 0;
+    padding: 3px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
     flex-shrink: 0;
-    transition: color 0.2s ease;
 }
 
 .delete-button:hover {
-    color: #dc2626;
+    background: rgba(74, 144, 226, 0.1);
+    color: var(--primary);
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .document-meta {
@@ -471,6 +558,7 @@
     
     .subtitle {
         font-size: 0.7rem;
+        text-align: center;
     }
     
     .upload-section {

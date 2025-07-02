@@ -283,8 +283,8 @@ const MarkdownMessage = ({ content }) => {
         elements.push(
           <div key={index} className="ai-math-block">
             <BlockMath math={formula} />
-          </div>
-        );
+  </div>
+);
         return;
       }
       

@@ -203,6 +203,29 @@ def delete_document(filename):
     except Exception as e:
         return handle_api_error(e, "Failed to delete document")
 
+@documents_bp.route('/documents/delete-all', methods=['DELETE'])
+def delete_all_documents():
+    """Delete all uploaded documents"""
+    try:
+        deleted_count = 0
+        
+        if os.path.exists(UPLOAD_FOLDER):
+            for filename in os.listdir(UPLOAD_FOLDER):
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                if os.path.isfile(file_path):
+                    # Check if file is actually in upload folder (security check)
+                    if os.path.abspath(file_path).startswith(os.path.abspath(UPLOAD_FOLDER)):
+                        os.remove(file_path)
+                        deleted_count += 1
+        
+        return jsonify({
+            "message": f"Successfully deleted {deleted_count} documents",
+            "deleted_count": deleted_count
+        })
+        
+    except Exception as e:
+        return handle_api_error(e, "Failed to delete all documents")
+
 @documents_bp.route('/documents/<filename>/analyze', methods=['POST'])
 def reanalyze_document(filename):
     """Re-analyze an existing document"""

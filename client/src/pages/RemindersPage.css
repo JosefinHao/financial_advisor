@@ -1,10 +1,35 @@
 .reminders-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: none;
+  margin: 0;
+  padding: 16px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  height: 100vh;
   overflow-y: auto;
+  height: 100vh;
+  min-height: 100vh;
+}
+
+/* Override global overflow hidden */
+.reminders-page {
+  overflow-y: auto !important;
+}
+
+/* Custom Scrollbar Styling */
+.reminders-page::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reminders-page::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.reminders-page::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.reminders-page::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .reminders-header {
@@ -31,6 +56,7 @@
   margin: 0;
   font-size: 0.9rem !important;
   opacity: 0.9;
+  text-align: center;
 }
 
 .reminders-container {

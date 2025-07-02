@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DocumentUpload.css';
+import MarkdownMessage from '../ui/MarkdownMessage';
 
 const DocumentUpload = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -18,10 +19,13 @@ const DocumentUpload = () => {
 
     const fetchUploadHistory = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:5000/documents');
+            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/history');
             if (response.ok) {
                 const data = await response.json();
                 setUploadHistory(data);
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to fetch upload history:', errorData);
             }
         } catch (err) {
             console.error('Failed to fetch upload history:', err);
@@ -99,7 +103,7 @@ const DocumentUpload = () => {
         formData.append('document', selectedFile);
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/documents/upload', {
+            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -114,10 +118,16 @@ const DocumentUpload = () => {
                 fetchUploadHistory();
             } else {
                 const errorData = await response.json();
-                setError(errorData.error || 'Failed to upload document');
+                const errorMessage = typeof errorData.error === 'string' 
+                    ? errorData.error 
+                    : errorData.message || 'Failed to upload document';
+                setError(errorMessage);
             }
         } catch (err) {
-            setError('Failed to upload document. Please try again.');
+            const errorMessage = err && typeof err.message === 'string' 
+                ? err.message 
+                : 'Failed to upload document. Please try again.';
+            setError(errorMessage);
             console.error('Upload error:', err);
         } finally {
             setUploading(false);
@@ -136,18 +146,51 @@ const DocumentUpload = () => {
         if (!window.confirm('Are you sure you want to delete this document?')) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:5000/documents/${documentId}`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/v1/documents/${documentId}`, {
                 method: 'DELETE',
             });
 
             if (response.ok) {
                 fetchUploadHistory();
             } else {
-                setError('Failed to delete document');
+                const errorData = await response.json();
+                const errorMessage = typeof errorData.error === 'string' 
+                    ? errorData.error 
+                    : errorData.message || 'Failed to delete document';
+                setError(errorMessage);
             }
         } catch (err) {
-            setError('Failed to delete document');
+            const errorMessage = err && typeof err.message === 'string' 
+                ? err.message 
+                : 'Failed to delete document';
+            setError(errorMessage);
             console.error('Delete error:', err);
+        }
+    };
+
+    const deleteAllDocuments = async () => {
+        if (!window.confirm('Are you sure you want to delete ALL documents? This action cannot be undone.')) return;
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/delete-all', {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                fetchUploadHistory();
+            } else {
+                const errorData = await response.json();
+                const errorMessage = typeof errorData.error === 'string' 
+                    ? errorData.error 
+                    : errorData.message || 'Failed to delete all documents';
+                setError(errorMessage);
+            }
+        } catch (err) {
+            const errorMessage = err && typeof err.message === 'string' 
+                ? err.message 
+                : 'Failed to delete all documents';
+            setError(errorMessage);
+            console.error('Delete all error:', err);
         }
     };
 
@@ -240,13 +283,11 @@ const DocumentUpload = () => {
                     </div>
                 )}
 
-                {analysis && (
+                {analysis && typeof analysis === 'string' && (
                     <div className="analysis-result">
-                        <h4 className="analysis-title">📊 Analysis Result:</h4>
+                        <h4 className="analysis-title">Analysis Result</h4>
                         <div className="analysis-content">
-                            {analysis.split('\n').map((line, index) => (
-                                <p key={index}>{line}</p>
-                            ))}
+                            <MarkdownMessage content={analysis} />
                         </div>
                     </div>
                 )}
@@ -254,7 +295,18 @@ const DocumentUpload = () => {
 
             {/* Upload History */}
             <div className="history-section">
-                <h3 className="section-title">📚 Document History</h3>
+                <div className="history-header">
+                    <h3 className="section-title">📚 Document History</h3>
+                    {uploadHistory.length > 0 && (
+                        <button
+                            onClick={deleteAllDocuments}
+                            className="delete-all-button"
+                            title="Delete all documents"
+                        >
+                            Delete All
+                        </button>
+                    )}
+                </div>
 
                 {uploadHistory.length === 0 ? (
                     <div className="empty-state">
@@ -266,23 +318,27 @@ const DocumentUpload = () => {
                         {uploadHistory.map((doc) => (
                             <div key={doc.id} className="document-card">
                                 <div className="document-header">
-                                    <h4 className="document-title">{doc.filename}</h4>
+                                    <h4 className="document-title">{doc.filename || 'Unknown File'}</h4>
                                     <button
                                         onClick={() => deleteDocument(doc.id)}
                                         className="delete-button"
                                         title="Delete document"
                                     >
-                                        🗑️
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M3 6h18"/>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                        </svg>
                                     </button>
                                 </div>
 
                                 <div className="document-meta">
-                                    <p><strong>Type:</strong> {doc.file_type}</p>
-                                    <p><strong>Size:</strong> {formatFileSize(doc.file_size)}</p>
-                                    <p><strong>Uploaded:</strong> {new Date(doc.uploaded_at).toLocaleDateString()}</p>
+                                    <p><strong>Type:</strong> {doc.file_type || 'Unknown'}</p>
+                                    <p><strong>Size:</strong> {formatFileSize(doc.file_size || 0)}</p>
+                                    <p><strong>Uploaded:</strong> {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'Unknown'}</p>
                                 </div>
 
-                                {doc.analysis && (
+                                {doc.analysis && typeof doc.analysis === 'string' && (
                                     <div className="document-analysis">
                                         <h5 className="analysis-summary-title">Analysis Summary:</h5>
                                         <p className="analysis-summary">

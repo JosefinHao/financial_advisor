@@ -117,6 +117,7 @@ def create_app():
                     "POST /api/v1/documents/upload": "Upload and analyze document",
                     "GET /api/v1/documents/history": "Get document history",
                     "DELETE /api/v1/documents/<filename>": "Delete document",
+                    "DELETE /api/v1/documents/delete-all": "Delete all documents",
                     "POST /api/v1/documents/<filename>/analyze": "Re-analyze document"
                 }
             }
