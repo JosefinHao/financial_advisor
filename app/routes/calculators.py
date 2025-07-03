@@ -56,11 +56,12 @@ def retirement_calculator():
     # Calculate interest earned
     interest_earned = future_value - total_contributions
     
-    # Calculate inflation-adjusted retirement income
-    inflation_adjusted_income = (social_security_income + pension_income) * (1 - inflation_rate) ** years_to_retirement
+    # Calculate inflation-adjusted monthly retirement income
+    inflation_adjusted_monthly_income = (social_security_income + pension_income) * (1 + inflation_rate) ** years_to_retirement
     
     # Calculate savings gap
-    savings_gap = desired_retirement_income - inflation_adjusted_income - (future_value * 0.04)  # 4% withdrawal rule
+    total_retirement_income = (future_value * 0.04) + (inflation_adjusted_monthly_income * 12)
+    savings_gap = desired_retirement_income - total_retirement_income
     
     # Generate yearly projections
     yearly_projections = []
@@ -116,35 +117,76 @@ def retirement_calculator():
     catch_up_scenarios = []
     if savings_gap > 0:
         # Calculate additional monthly savings needed
-        additional_monthly_savings = savings_gap / ((1 + monthly_return) ** (years_to_retirement * 12) - 1) * monthly_return
-        catch_up_scenarios.append({
-            "scenario": "Increase Monthly Savings",
-            "description": f"Save an additional ${additional_monthly_savings:,.0f} per month to close the gap",
-            "additional_monthly_savings": round(additional_monthly_savings, 2),
-            "new_total_monthly_savings": round(monthly_contribution + additional_monthly_savings, 2)
-        })
+        # First, calculate the target future value needed
+        target_future_value = desired_retirement_income / 0.04
+        # Calculate the shortfall in future value
+        future_value_shortfall = target_future_value - future_value
+        # Calculate monthly contribution needed to reach the target
+        additional_monthly_savings = future_value_shortfall * monthly_return / ((1 + monthly_return) ** (years_to_retirement * 12) - 1)
+        
+        # Show appropriate message based on the additional amount needed
+        if additional_monthly_savings > 1 and additional_monthly_savings < 1000:
+            catch_up_scenarios.append({
+                "scenario": "Increase Monthly Savings",
+                "description": f"Save an additional ${additional_monthly_savings:.0f} per month to close the gap",
+                "additional_monthly_savings": round(additional_monthly_savings, 2),
+                "new_total_monthly_savings": round(monthly_contribution + additional_monthly_savings, 2)
+            })
+        elif additional_monthly_savings <= 1:
+            # Gap is very small, show a more encouraging message
+            catch_up_scenarios.append({
+                "scenario": "Almost There!",
+                "description": f"You're very close to your goal! Just ${additional_monthly_savings:.1f} more per month would close the gap completely.",
+                "additional_monthly_savings": round(additional_monthly_savings, 2),
+                "new_total_monthly_savings": round(monthly_contribution + additional_monthly_savings, 2)
+            })
+        else:
+            # Gap is very large, show alternative approaches
+            catch_up_scenarios.append({
+                "scenario": "Significant Gap",
+                "description": f"The gap is quite large (${additional_monthly_savings:,.0f}/month needed). Consider the other options below.",
+                "additional_monthly_savings": round(additional_monthly_savings, 2),
+                "new_total_monthly_savings": round(monthly_contribution + additional_monthly_savings, 2)
+            })
         
         # Calculate required return rate
-        required_return = ((desired_retirement_income / 0.04 + inflation_adjusted_income) / (current_savings + monthly_contribution * 12 * years_to_retirement)) ** (1 / years_to_retirement) - 1
-        catch_up_scenarios.append({
-            "scenario": "Increase Investment Returns",
-            "description": f"Need {required_return * 100:.1f}% annual return vs current {expected_return * 100:.1f}%",
-            "required_return_rate": round(required_return * 100, 2),
-            "current_return_rate": round(expected_return * 100, 2)
-        })
+        required_return = ((desired_retirement_income / 0.04 + inflation_adjusted_monthly_income * 12) / (current_savings + monthly_contribution * 12 * years_to_retirement)) ** (1 / years_to_retirement) - 1
+        
+        # Only show if the required return is reasonable (not more than 5% higher than current)
+        if required_return <= expected_return + 0.05:
+            catch_up_scenarios.append({
+                "scenario": "Increase Investment Returns",
+                "description": f"Need {required_return * 100:.1f}% annual return vs current {expected_return * 100:.1f}%",
+                "required_return_rate": round(required_return * 100, 2),
+                "current_return_rate": round(expected_return * 100, 2)
+            })
+        else:
+            catch_up_scenarios.append({
+                "scenario": "Investment Returns",
+                "description": f"Required return ({required_return * 100:.1f}%) is significantly higher than your current expectation ({expected_return * 100:.1f}%). Consider other options.",
+                "required_return_rate": round(required_return * 100, 2),
+                "current_return_rate": round(expected_return * 100, 2)
+            })
         
         # Calculate working longer
         additional_years_needed = math.log((desired_retirement_income / 0.04) / future_value) / math.log(1 + expected_return)
-        if additional_years_needed > 0:
+        if additional_years_needed > 0 and additional_years_needed <= 10:  # Only show if reasonable (≤10 years)
             catch_up_scenarios.append({
                 "scenario": "Work Longer",
                 "description": f"Work {additional_years_needed:.1f} additional years to reach your goal",
                 "additional_years": round(additional_years_needed, 1),
                 "new_retirement_age": round(retirement_age + additional_years_needed, 1)
             })
+        elif additional_years_needed > 10:
+            catch_up_scenarios.append({
+                "scenario": "Work Longer",
+                "description": f"Would need to work {additional_years_needed:.1f} additional years - consider adjusting your retirement income goal instead",
+                "additional_years": round(additional_years_needed, 1),
+                "new_retirement_age": round(retirement_age + additional_years_needed, 1)
+            })
         
         # Calculate reducing retirement income goal
-        achievable_income = inflation_adjusted_income + (future_value * 0.04)
+        achievable_income = (inflation_adjusted_monthly_income * 12) + (future_value * 0.04)
         catch_up_scenarios.append({
             "scenario": "Adjust Retirement Income Goal",
             "description": f"Reduce annual retirement income goal to ${achievable_income:,.0f}",
@@ -269,7 +311,7 @@ def retirement_calculator():
         "social_security_income": social_security_income,
         "pension_income": pension_income,
         "desired_retirement_income": desired_retirement_income,
-        "inflation_adjusted_income": round(inflation_adjusted_income, 2),
+        "inflation_adjusted_income": round(inflation_adjusted_monthly_income * 12, 2),
         "savings_gap": round(savings_gap, 2),
         "yearly_projections": yearly_projections,
         "withdrawal_scenarios": withdrawal_scenarios,
