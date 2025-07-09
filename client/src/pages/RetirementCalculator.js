@@ -311,7 +311,7 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
             {results.savings_gap > 0 && (
               <div className="gap-analysis">
                 <h4>⚠️ Savings Gap Detected</h4>
-                <p>You need an additional <strong>{formatCurrency(results.savings_gap)}</strong> to meet your retirement income goal.</p>
+                <p>You need an additional <strong>{formatCurrency(results.savings_gap)}</strong> <strong>per year</strong> in retirement income to meet your goal.</p>
                 
                 {results.catch_up_scenarios.length > 0 && (
                   <div className="catch-up-options">
