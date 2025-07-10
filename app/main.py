@@ -30,7 +30,11 @@ def create_app():
     app = Flask(__name__)
     
     # Configure CORS
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": [
+        "http://localhost:3000",  # Local development
+        "https://my-financial-advisor.onrender.com",  # Your frontend domain
+        "https://financial-advisor-4yle.onrender.com"  # Your backend domain (for health checks)
+    ]}})
     
     # Configure logging
     logging.basicConfig(
