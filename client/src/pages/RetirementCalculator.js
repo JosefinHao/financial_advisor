@@ -6,8 +6,8 @@ import { getApiUrl } from '../config';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
-  const [customColor, setCustomColor] = useState('#0f4c75');
-  const [customColor2, setCustomColor2] = useState('#4a5568');
+  const [customColor, setCustomColor] = useState('#5886D0');
+  const [customColor2, setCustomColor2] = useState('#5FBFAF');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('retirementColor');
@@ -105,8 +105,8 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
           onColor2Change={handleColor2Change}
           storageKey1="retirementColor"
           storageKey2="retirementColor2"
-          defaultColor1="#0f4c75"
-          defaultColor2="#4a5568"
+          defaultColor1="#5886D0"
+          defaultColor2="#5FBFAF"
         />
       </div>
 

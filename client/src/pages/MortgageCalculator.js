@@ -5,8 +5,8 @@ import DualColorPicker from '../ui/DualColorPicker';
 import { getApiUrl } from '../config';
 
 const MortgageCalculator = ({ formData, results, loading, error, updateState }) => {
-  const [customColor, setCustomColor] = useState('#43cea2');
-  const [customColor2, setCustomColor2] = useState('#185a9d');
+  const [customColor, setCustomColor] = useState('#8B5B5B');
+  const [customColor2, setCustomColor2] = useState('#B0C8CF');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('mortgageColor');
@@ -99,8 +99,8 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
           onColor2Change={handleColor2Change}
           storageKey1="mortgageColor"
           storageKey2="mortgageColor2"
-          defaultColor1="#43cea2"
-          defaultColor2="#185a9d"
+          defaultColor1="#8B5B5B"
+          defaultColor2="#B0C8CF"
         />
       </div>
 

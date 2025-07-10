@@ -7,8 +7,8 @@ import DualColorPicker from '../ui/DualColorPicker';
 const NetWorthPage = ({ formData, results, loading, error, updateState }) => {
   const navigate = useNavigate();
   const [showResults, setShowResults] = useState(false);
-  const [customColor, setCustomColor] = useState('#4a5568');
-  const [customColor2, setCustomColor2] = useState('#1e3a8a');
+  const [customColor, setCustomColor] = useState('#88DDC1');
+  const [customColor2, setCustomColor2] = useState('#D86F6F');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [trendPeriod, setTrendPeriod] = useState('6'); // '6' for 6 months, '12' for 12 months
   const [savedNetWorth, setSavedNetWorth] = useState(null);
@@ -434,8 +434,8 @@ const NetWorthPage = ({ formData, results, loading, error, updateState }) => {
           onColor2Change={handleColor2Change}
           storageKey1="networthColor"
           storageKey2="networthColor2"
-          defaultColor1="#4a5568"
-          defaultColor2="#1e3a8a"
+          defaultColor1="#88DDC1"
+          defaultColor2="#D86F6F"
         />
       </div>
 

@@ -7,8 +7,8 @@ import MarkdownMessage from '../ui/MarkdownMessage';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
-  const [customColor, setCustomColor] = useState('#5f2c82');
-  const [customColor2, setCustomColor2] = useState('#49a09d');
+  const [customColor, setCustomColor] = useState('#696F6F');
+  const [customColor2, setCustomColor2] = useState('#628ECB');
 
   useEffect(() => {
     const savedColor = localStorage.getItem('compoundColor');
@@ -118,8 +118,8 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
           onColor2Change={handleColor2Change}
           storageKey1="compoundColor"
           storageKey2="compoundColor2"
-          defaultColor1="#5f2c82"
-          defaultColor2="#49a09d"
+          defaultColor1="#696F6F"
+          defaultColor2="#628ECB"
         />
       </div>
 
