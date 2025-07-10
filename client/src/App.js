@@ -9,8 +9,10 @@ import RetirementCalculator from './pages/RetirementCalculator';
 import MortgageCalculator from './pages/MortgageCalculator';
 import CompoundInterestCalculator from './pages/CompoundInterestCalculator';
 import GoalsPage from './pages/GoalsPage';
+import HomePage from './pages/HomePage';
 import 'katex/dist/katex.min.css';
 import MarkdownMessage from './ui/MarkdownMessage';
+import { getApiUrl } from './config';
 
 // Custom hook for managing input focus
 function useInputFocus() {
@@ -329,7 +331,7 @@ function AppContent() {
 
   const refreshConversations = async (preserveSelection = false) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/v1/conversations');
+      const res = await fetch(getApiUrl('/conversations'));
       const data = await res.json();
       // Ensure data is always an array
       const conversationsArray = Array.isArray(data) ? data : [];
@@ -360,7 +362,7 @@ function AppContent() {
     if (!id) return;
     
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}`);
+      const res = await fetch(getApiUrl(`/conversations/${id}`));
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -402,7 +404,7 @@ function AppContent() {
       setChatHistory(prev => [...prev, { role: 'assistant', content: '' }]);
       
       // Use the streaming endpoint
-      const response = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}/stream`, {
+      const response = await fetch(getApiUrl(`/conversations/${selectedConversationId}/stream`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage.trim() }),
@@ -523,7 +525,7 @@ function AppContent() {
 
   const startNewChat = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/v1/conversations', {
+      const res = await fetch(getApiUrl('/conversations'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'New Chat' }),
@@ -587,7 +589,7 @@ function AppContent() {
     const newTitle = prompt('Enter new title for the conversation:');
     if (!newTitle) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}/rename`, {
+      await fetch(getApiUrl(`/conversations/${id}/rename`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle }),
@@ -600,7 +602,7 @@ function AppContent() {
 
   const handleAutoRename = async (id) => {
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}/auto_rename`, {
+      const res = await fetch(getApiUrl(`/conversations/${id}/auto_rename`), {
         method: 'POST',
       });
       const data = await res.json();
@@ -613,7 +615,7 @@ function AppContent() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this conversation?')) return;
     try {
-      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${id}`, {
+      await fetch(getApiUrl(`/conversations/${id}`), {
         method: 'DELETE',
       });
       await refreshConversations();
@@ -630,7 +632,7 @@ function AppContent() {
     if (!newTag.trim() || !selectedConversationId) return;
     const updatedTags = [...tagsArray, newTag.trim()];
     try {
-      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${selectedConversationId}/tags`, {
+      await fetch(getApiUrl(`/conversations/${selectedConversationId}/tags`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: updatedTags }),
@@ -662,7 +664,7 @@ function AppContent() {
     const updatedTags = conversation.tags.filter(t => t !== tagToRemove);
 
     try {
-      await fetch(`http://127.0.0.1:5000/api/v1/conversations/${conversationId}/tags`, {
+      await fetch(getApiUrl(`/conversations/${conversationId}/tags`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: updatedTags }),
@@ -794,7 +796,7 @@ function AppContent() {
       setSelectedTopic(topicId);
 
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/v1/education/topics/${topicId}`);
+        const response = await fetch(getApiUrl(`/education/topics/${topicId}`));
         if (response.ok) {
           const data = await response.json();
           setContent(data.content);
@@ -1403,6 +1405,7 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/net-worth" element={<NetWorthPageWrapper />} />
+          <Route path="/home" element={<HomePage />} />
 
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

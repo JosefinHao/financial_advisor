@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './RetirementCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
+import { getApiUrl } from '../config';
 
 const RetirementCalculator = ({ formData, results, loading, error, updateState }) => {
   const [showAllYears, setShowAllYears] = useState(false);
@@ -35,7 +36,7 @@ const RetirementCalculator = ({ formData, results, loading, error, updateState }
     updateState({ loading: true, error: '' });
     
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/v1/calculators/retirement', {
+      const response = await fetch(getApiUrl('/calculators/retirement'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './CompoundInterestCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
+import { getApiUrl } from '../config';
 import MarkdownMessage from '../ui/MarkdownMessage';
 
 const CompoundInterestCalculator = ({ formData, results, loading, error, updateState }) => {
@@ -60,7 +61,7 @@ const CompoundInterestCalculator = ({ formData, results, loading, error, updateS
         contribution_increase_rate: formData.contribution_increase_rate
       };
 
-      const response = await fetch('http://127.0.0.1:5000/api/v1/calculators/compound-interest', {
+      const response = await fetch(getApiUrl('/calculators/compound-interest'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

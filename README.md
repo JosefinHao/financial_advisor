@@ -152,6 +152,29 @@ The API follows RESTful conventions with proper versioning:
    npm start
    ```
 
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+
+### Quick Deployment
+
+**For Windows:**
+```bash
+deploy_frontend.bat
+```
+
+**For Linux/Mac:**
+```bash
+./deploy_frontend.sh
+```
+
+**Manual deployment:**
+```bash
+cd client
+npm install
+npm run build
+```
+
 ## 🔧 Environment Variables
 
 Create a `.env` file with the following variables:

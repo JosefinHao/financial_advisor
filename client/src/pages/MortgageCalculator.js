@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './MortgageCalculator.css';
 import { generateGradient } from '../utils/gradientUtils';
 import DualColorPicker from '../ui/DualColorPicker';
+import { getApiUrl } from '../config';
 
 const MortgageCalculator = ({ formData, results, loading, error, updateState }) => {
   const [customColor, setCustomColor] = useState('#43cea2');
@@ -46,13 +47,13 @@ const MortgageCalculator = ({ formData, results, loading, error, updateState }) 
     updateState({ loading: true, error: '' });
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/v1/calculators/mortgage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+          const response = await fetch(getApiUrl('/calculators/mortgage'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
 
       const data = await response.json();
 

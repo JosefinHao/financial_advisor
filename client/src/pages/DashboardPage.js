@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './DashboardPage.css';
 import MarkdownMessage from '../ui/MarkdownMessage';
+import { getApiUrl } from '../config';
 
 const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -15,7 +16,7 @@ const DashboardPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/v1/dashboard');
+      const response = await fetch(getApiUrl('/dashboard'));
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);

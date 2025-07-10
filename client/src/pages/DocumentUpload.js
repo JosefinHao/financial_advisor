@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DocumentUpload.css';
 import MarkdownMessage from '../ui/MarkdownMessage';
+import { getApiUrl } from '../config';
 
 const DocumentUpload = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -19,7 +20,7 @@ const DocumentUpload = () => {
 
     const fetchUploadHistory = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/history');
+            const response = await fetch(getApiUrl('/documents/history'));
             if (response.ok) {
                 const data = await response.json();
                 setUploadHistory(data);
@@ -103,7 +104,7 @@ const DocumentUpload = () => {
         formData.append('document', selectedFile);
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/upload', {
+            const response = await fetch(getApiUrl('/documents/upload'), {
                 method: 'POST',
                 body: formData,
             });
@@ -146,7 +147,7 @@ const DocumentUpload = () => {
         if (!window.confirm('Are you sure you want to delete this document?')) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/v1/documents/${documentId}`, {
+            const response = await fetch(getApiUrl(`/documents/${documentId}`), {
                 method: 'DELETE',
             });
 
@@ -172,7 +173,7 @@ const DocumentUpload = () => {
         if (!window.confirm('Are you sure you want to delete ALL documents? This action cannot be undone.')) return;
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/v1/documents/delete-all', {
+            const response = await fetch(getApiUrl('/documents/delete-all'), {
                 method: 'DELETE',
             });
 
