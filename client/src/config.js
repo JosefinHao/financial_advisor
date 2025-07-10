@@ -1,4 +1,5 @@
 // API Configuration for different environments
+// Updated for production deployment
 const config = {
   // Development environment (local)
   development: {
