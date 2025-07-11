@@ -22,6 +22,11 @@ from app.utils.error_handlers import (
 )
 from app.utils.database import get_db_session
 
+from app.models_base import Base
+from app.db import engine
+
+Base.metadata.create_all(engine) 
+
 # Load environment variables
 load_dotenv()
 
