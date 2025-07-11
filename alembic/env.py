@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 
 # Import your models
 from app.models_base import Base
+from app.db import engine
+
+Base.metadata.create_all(engine) 
 
 # Load environment variables
 load_dotenv()
