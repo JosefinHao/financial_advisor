@@ -995,6 +995,142 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
 
   // Goal Tracking Component - Now imported from separate file
 
+  function ChatPanel() {
+    return (
+      <div className="chat-panel">
+        <h1>Financial Advisor Chat</h1>
+
+        {/* Chat History Display */}
+        <div className="chat-box">
+          {Array.isArray(chatHistory) && chatHistory.length > 0 ? (
+            chatHistory.map((msg, idx) => (
+              msg.role === 'assistant' && (!msg.content || !msg.content.trim()) ? null : (
+                <div key={idx} className={`chat-message ${msg.role}`}>
+                  <div className="chat-message-header">
+                    {msg.role === 'user' ? 'You:' : 'Advisor:'}
+                  </div>
+                  <div className="chat-message-content">
+                    <MarkdownMessage content={msg.content} />
+                  </div>
+                </div>
+              )
+            ))
+          ) : (
+            <p>No messages yet. Start the conversation!</p>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Tag Input Area */}
+        <div className="tag-input-container">
+          <div className="tag-input-section">
+            <input
+              type="text"
+              placeholder="Add a tag"
+              value={newTag}
+              onChange={(e) => {
+                setNewTag(e.target.value);
+                setTagSaved(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addTag();
+                }
+              }}
+              className="tag-input"
+            />
+            <button
+              onClick={addTag}
+              disabled={!newTag.trim()}
+              className="add-tag-button"
+            >
+              Add Tag
+            </button>
+            {tagSaved && <span className="tag-saved-message">Saved!</span>}
+
+            {/* Current Tags Display (inline) */}
+            {tagsArray && tagsArray.length > 0 && (
+              <div className="current-tags-row">
+                <span className="current-tags-label">Current tags:</span>
+                <div className="current-tags-list">
+                  {tagsArray.map((tag, index) => (
+                    <span key={`current-tag-${index}`} className="current-tag-badge">
+                      {tag}
+                      <button
+                        type="button"
+                        className="current-tag-delete"
+                        onClick={() => removeTag(selectedConversationId, tag)}
+                        title="Remove tag"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Message Input Area */}
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sendMessage();
+          }}
+          className="message-input-container"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
+          <textarea
+            value={userMessage}
+            onChange={(e) => setUserMessage(e.target.value)}
+            rows={2}
+            className={`message-textarea ${isInputFocused ? 'focused' : ''}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                sendMessage();
+              }
+            }}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            placeholder="Type your message here and press Enter"
+            disabled={loading}
+            ref={messageInputRef}
+          />
+          <div className="button-container">
+            {loading && (
+              <button
+                type="button"
+                onClick={stopResponse}
+                className="stop-button"
+                title="Stop response"
+              >
+                Stop
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading || !userMessage.trim()}
+              className="send-button"
+            >
+              {loading ? '...' : 'Send'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* LEFT SIDEBAR - Navigation & Past Chats */}
@@ -1262,140 +1398,8 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
       {/* RIGHT SIDE - Main Content Area */}
       <div className="main-content">
         <Routes>
-          <Route path="/" element={
-            <div className="chat-panel">
-              <h1>Financial Advisor Chat</h1>
-
-              {/* Chat History Display */}
-              <div className="chat-box">
-                {Array.isArray(chatHistory) && chatHistory.length > 0 ? (
-                  chatHistory.map((msg, idx) => (
-                    msg.role === 'assistant' && (!msg.content || !msg.content.trim()) ? null : (
-                      <div key={idx} className={`chat-message ${msg.role}`}>
-                        <div className="chat-message-header">
-                          {msg.role === 'user' ? 'You:' : 'Advisor:'}
-                        </div>
-                        <div className="chat-message-content">
-                          <MarkdownMessage content={msg.content} />
-                        </div>
-                      </div>
-                    )
-                  ))
-                ) : (
-                  <p>No messages yet. Start the conversation!</p>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Tag Input Area */}
-              <div className="tag-input-container">
-                <div className="tag-input-section">
-                  <input
-                    type="text"
-                    placeholder="Add a tag"
-                    value={newTag}
-                    onChange={(e) => {
-                      setNewTag(e.target.value);
-                      setTagSaved(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addTag();
-                      }
-                    }}
-                    className="tag-input"
-                  />
-                  <button
-                    onClick={addTag}
-                    disabled={!newTag.trim()}
-                    className="add-tag-button"
-                  >
-                    Add Tag
-                  </button>
-                  {tagSaved && <span className="tag-saved-message">Saved!</span>}
-
-                  {/* Current Tags Display (inline) */}
-                  {tagsArray && tagsArray.length > 0 && (
-                    <div className="current-tags-row">
-                      <span className="current-tags-label">Current tags:</span>
-                      <div className="current-tags-list">
-                        {tagsArray.map((tag, index) => (
-                          <span key={`current-tag-${index}`} className="current-tag-badge">
-                            {tag}
-                            <button
-                              type="button"
-                              className="current-tag-delete"
-                              onClick={() => removeTag(selectedConversationId, tag)}
-                              title="Remove tag"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Message Input Area */}
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  sendMessage();
-                }}
-                className="message-input-container"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                <textarea
-                  value={userMessage}
-                  onChange={(e) => setUserMessage(e.target.value)}
-                  rows={2}
-                  className={`message-textarea ${isInputFocused ? 'focused' : ''}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      sendMessage();
-                    }
-                  }}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
-                  placeholder="Type your message here and press Enter"
-                  disabled={loading}
-                  ref={messageInputRef}
-                />
-                <div className="button-container">
-                  {loading && (
-                    <button
-                      type="button"
-                      onClick={stopResponse}
-                      className="stop-button"
-                      title="Stop response"
-                    >
-                      Stop
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={loading || !userMessage.trim()}
-                    className="send-button"
-                  >
-                    {loading ? '...' : 'Send'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          } />
-
+          <Route path="/" element={<ChatPanel />} />
+          <Route path="/chat" element={<ChatPanel />} />
           {/* Other Routes */}
           <Route path="/calculators/retirement" element={<RetirementCalculatorWrapper />} />
           <Route path="/calculators/mortgage" element={<MortgageCalculatorWrapper />} />
@@ -1406,7 +1410,6 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/net-worth" element={<NetWorthPageWrapper />} />
           <Route path="/home" element={<HomePage />} />
-
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
