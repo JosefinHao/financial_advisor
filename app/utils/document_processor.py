@@ -4,6 +4,7 @@ import logging
 import os
 import openai
 from dotenv import load_dotenv
+import tiktoken
 
 # Load environment variables
 load_dotenv()
@@ -161,3 +162,16 @@ def sanitize_filename(filename):
         name, ext = os.path.splitext(safe_filename)
         safe_filename = name[:255-len(ext)] + ext
     return safe_filename 
+
+def count_tokens(text, model="gpt-3.5-turbo"):
+    enc = tiktoken.encoding_for_model(model)
+    return len(enc.encode(text))
+
+def chunk_text(text, max_tokens=15000, model="gpt-3.5-turbo"):
+    enc = tiktoken.encoding_for_model(model)
+    tokens = enc.encode(text)
+    chunks = []
+    for i in range(0, len(tokens), max_tokens):
+        chunk = enc.decode(tokens[i:i+max_tokens])
+        chunks.append(chunk)
+    return chunks 

@@ -321,7 +321,7 @@ const DocumentUpload = () => {
                                 <div className="document-header">
                                     <h4 className="document-title">{doc.filename || 'Unknown File'}</h4>
                                     <button
-                                        onClick={() => deleteDocument(doc.id)}
+                                        onClick={() => deleteDocument(doc.filename)}
                                         className="delete-button"
                                         title="Delete document"
                                     >

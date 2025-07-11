@@ -16,3 +16,4 @@ python-dotenv==1.0.0
 # textract==1.6.4
 sqlalchemy==2.0.23
 Werkzeug==2.3.7
+tiktoken>=0.5.1

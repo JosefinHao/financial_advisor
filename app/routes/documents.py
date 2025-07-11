@@ -9,7 +9,7 @@ from app.utils.error_handlers import (
     NotFoundError, 
     FileError
 )
-from app.utils.document_processor import extract_text_from_pdf, extract_text_from_txt, extract_data_from_csv, analyze_document_with_ai
+from app.utils.document_processor import extract_text_from_pdf, extract_text_from_txt, extract_data_from_csv, analyze_document_with_ai, count_tokens, chunk_text
 
 # Create blueprint for document routes
 documents_bp = Blueprint('documents', __name__)
@@ -112,9 +112,29 @@ def upload_document():
                     file_path=file_path
                 )
                 return create_error_response(file_error)
-            
-            # Analyze document with AI
-            analysis = analyze_document_with_ai(text_content, file_extension, filename)
+
+            # Preemptive token count and chunking
+            MAX_TOKENS = 15000  # leave room for prompt and completion
+            token_count = count_tokens(text_content)
+            if token_count > MAX_TOKENS:
+                # Split into chunks
+                chunks = chunk_text(text_content, max_tokens=MAX_TOKENS)
+                analysis_results = []
+                for i, chunk in enumerate(chunks):
+                    try:
+                        result = analyze_document_with_ai(chunk, file_extension, f"{filename} (part {i+1} of {len(chunks)})")
+                        analysis_results.append(f"--- Part {i+1} of {len(chunks)} ---\n" + result)
+                    except Exception as chunk_error:
+                        analysis_results.append(f"Error analyzing part {i+1}: {str(chunk_error)}")
+                user_message = (
+                    "The document you uploaded was too large to analyze in a single pass due to ChatGPT's context window limit (16,385 tokens). "
+                    "It was automatically split into smaller parts for analysis. If you need more detail, please upload a smaller section."
+                )
+                analysis = user_message + "\n\n" + "\n\n".join(analysis_results)
+            else:
+                # Analyze document with AI
+                analysis = analyze_document_with_ai(text_content, file_extension, filename)
+                user_message = None
             
             # Store document info (you might want to add a database model for this)
             document_info = {
@@ -127,7 +147,7 @@ def upload_document():
             }
             
             return jsonify({
-                "message": "Document uploaded and analyzed successfully",
+                "message": "Document uploaded and analyzed successfully" if not user_message else user_message,
                 "filename": filename,
                 "analysis": analysis,
                 "document_info": document_info
@@ -138,6 +158,12 @@ def upload_document():
             if os.path.exists(file_path):
                 os.remove(file_path)
             logging.error(f"Document processing error: {processing_error}")
+            # Check for OpenAI context length error
+            if hasattr(processing_error, 'error') and getattr(processing_error.error, 'code', None) == 'context_length_exceeded':
+                return create_error_response(ValidationError(
+                    "The document is too large to analyze. Please upload a shorter document or split it into smaller parts.",
+                    field="document"
+                ))
             file_error = FileError(
                 "Failed to process document",
                 operation="document_processing",
