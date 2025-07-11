@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, Response, stream_template
 import logging
 from datetime import datetime
-from openai import OpenAI
+# from openai import OpenAI  # Removed unused import
 import os
 import json
 import openai
