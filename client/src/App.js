@@ -9,7 +9,6 @@ import RetirementCalculator from './pages/RetirementCalculator';
 import MortgageCalculator from './pages/MortgageCalculator';
 import CompoundInterestCalculator from './pages/CompoundInterestCalculator';
 import GoalsPage from './pages/GoalsPage';
-import HomePage from './pages/HomePage';
 import 'katex/dist/katex.min.css';
 import MarkdownMessage from './ui/MarkdownMessage';
 import { getApiUrl } from './config';
@@ -1409,7 +1408,6 @@ An emergency fund is money set aside for unexpected expenses or financial emerge
           <Route path="/reminders" element={<RemindersPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/net-worth" element={<NetWorthPageWrapper />} />
-          <Route path="/home" element={<HomePage />} />
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
