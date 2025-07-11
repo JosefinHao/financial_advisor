@@ -18,17 +18,17 @@ def clean_ai_response(text: str) -> str:
     if not text:
         return text
     
-    print(f"CLEAN_AI_RESPONSE INPUT: {repr(text)}")  # DEBUG
+    # print(f"CLEAN_AI_RESPONSE INPUT: {repr(text)}")  # DEBUG
     
     # Split into lines
     lines = text.split('\n')
-    print(f"SPLIT INTO LINES: {len(lines)} lines")  # DEBUG
+    # print(f"SPLIT INTO LINES: {len(lines)} lines")  # DEBUG
     cleaned_lines = []
     
     for i, line in enumerate(lines):
         line = line.strip()
         if not line:  # Skip empty lines
-            print(f"SKIPPING EMPTY LINE {i}")  # DEBUG
+            # print(f"SKIPPING EMPTY LINE {i}")  # DEBUG
             continue
             
         # Check if this is a list item (starts with number + dot or bullet point)
@@ -40,29 +40,29 @@ def clean_ai_response(text: str) -> str:
         starts_new_paragraph = (line.lower().startswith(('where:', 'note:', 'therefore:', 'thus:', 'hence:', 'so:', 'then:')) or
                                line.startswith('**') and line.endswith('**'))
         
-        print(f"LINE {i}: {repr(line)} - IS_LIST_ITEM: {is_list_item} - STARTS_NEW_PARAGRAPH: {starts_new_paragraph}")  # DEBUG
+        # print(f"LINE {i}: {repr(line)} - IS_LIST_ITEM: {is_list_item} - STARTS_NEW_PARAGRAPH: {starts_new_paragraph}")  # DEBUG
         
         if is_list_item:
             # For list items, keep the line as-is
             cleaned_lines.append(line)
-            print(f"ADDED AS LIST ITEM: {line}")  # DEBUG
+            # print(f"ADDED AS LIST ITEM: {line}")  # DEBUG
         elif starts_new_paragraph:
             # For text that should start a new paragraph, don't append to previous line
             cleaned_lines.append(line)
-            print(f"STARTED NEW PARAGRAPH: {line}")  # DEBUG
+            # print(f"STARTED NEW PARAGRAPH: {line}")  # DEBUG
         else:
             # For regular text, add a space if it's not the first line and previous line wasn't a list item
             if cleaned_lines and not re.match(r'^\d+\.', cleaned_lines[-1]) and not re.match(r'^[-*+]\s', cleaned_lines[-1]):
                 # Append to previous line with a space
                 cleaned_lines[-1] += ' ' + line
-                print(f"APPENDED TO PREVIOUS: {cleaned_lines[-1]}")  # DEBUG
+                # print(f"APPENDED TO PREVIOUS: {cleaned_lines[-1]}")  # DEBUG
             else:
                 # Start a new line
                 cleaned_lines.append(line)
-                print(f"STARTED NEW LINE: {line}")  # DEBUG
+                # print(f"STARTED NEW LINE: {line}")  # DEBUG
     
     result = '\n'.join(cleaned_lines)
-    print(f"CLEAN_AI_RESPONSE OUTPUT: {repr(result)}")  # DEBUG
+    # print(f"CLEAN_AI_RESPONSE OUTPUT: {repr(result)}")  # DEBUG
     return result
 
 # Base Financial Advisor System Prompt
